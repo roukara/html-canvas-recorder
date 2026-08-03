@@ -1,6 +1,6 @@
 # HTML Canvas Recorder
 
-https://github.com/user-attachments/assets/bcbef5be-34f5-4366-b6a1-864302f04979
+https://github.com/user-attachments/assets/81c31b55-84dd-452d-b980-b81bbeb4210b
 
 HTML Canvas Recorder is a Chrome extension for recording HTML5 `<canvas>` elements as video files from web pages. It is designed for local installation from this repository and works well for capturing WebGL animations, 2D canvas graphics, generative visuals, and interactive demos.
 
