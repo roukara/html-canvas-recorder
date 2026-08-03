@@ -1,0 +1,56 @@
+{
+  "name": "html-canvas-recorder",
+  "version": "1.0.0",
+  "description": "Record HTML5 canvas elements as video files with customizable settings",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:popup": "vite --open /src/popup/index.html",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src",
+    "format": "prettier --write .",
+    "check": "prettier --write . && eslint src"
+  },
+  "keywords": [
+    "chrome-extension",
+    "canvas",
+    "html5-canvas",
+    "recording",
+    "mediarecorder",
+    "webcodecs",
+    "webgl"
+  ],
+  "author": "Tsukasa Aoki",
+  "license": "MIT",
+  "homepage": "https://github.com/atsekkei/html-canvas-recorder#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atsekkei/html-canvas-recorder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atsekkei/html-canvas-recorder/issues"
+  },
+  "packageManager": "pnpm@10.15.0",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.2.0",
+    "@eslint/js": "^10.0.1",
+    "@types/chrome": "^0.1.9",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^7.1.5"
+  },
+  "dependencies": {
+    "fix-webm-duration": "^1.0.6",
+    "mp4-muxer": "^5.2.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  }
+}

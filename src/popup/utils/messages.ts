@@ -1,0 +1,85 @@
+const MESSAGES: Record<string, string> = {
+  extensionName: 'HTML Canvas Recorder',
+  appLabel: '://html-canvas-recorder',
+  settings: 'settings',
+  profileSettings: 'profile',
+  encodingSettings: 'encoding',
+  timingSettings: 'timing',
+  siteProfile: 'site profile',
+  siteProfileSummary: 'site',
+  siteProfileApplied: 'using site settings for $1',
+  globalProfileApplied: 'using global settings on $1',
+  siteProfileUnavailable: 'site settings are unavailable on this page',
+  encoding: 'encoding',
+  format: 'format',
+  frameRate: 'frame rate',
+  bitrate: 'bitrate',
+  startDelay: 'start delay',
+  framePump: 'frame pump',
+  autoStop: 'auto-stop',
+  secondsUnit: 'sec',
+  moreInfo: 'more info',
+  increase: 'increase',
+  decrease: 'decrease',
+  scan: 'scan',
+  scanning: 'scanning...',
+  rescan: 'rescan',
+  noCanvasesFound: 'no canvases found - try scanning',
+  canvasDisplay: 'canvas display',
+  canvasPreview: 'canvas $1 preview',
+  pickOnPage: 'pick on page',
+  pickingOnPage: 'picking...',
+  selectCanvasFirst: 'select a canvas first',
+  stopRecordingBeforeReload: 'stop recording before reload',
+  stopAndSave: 'stop & save',
+  startRecording: 'start recording',
+  resumeRecording: 'resume recording',
+  pauseRecording: 'pause recording',
+  armSelectedReload: 'arm selected & reload',
+  saved: 'saved',
+  paused: 'PAUSED',
+  rec: 'REC',
+  hidden: 'hidden',
+  tainted: 'tainted',
+  crossOriginTainted: 'cross-origin tainted',
+  lockedWhileRecording: 'locked while recording',
+  canvasSelectionLocked: 'canvas selection is locked while recording',
+  selectCanvas: 'select canvas $1',
+  saveCanvasPng: 'save canvas $1 as PNG',
+  position: 'pos',
+  frame: 'frame',
+  unsupportedMarker: '$1 x',
+  delaySummary: 'delay $1s',
+  infoFramePump:
+    'Uses requestFrame to supply steady frames for still or offscreen canvases. Usually leave this off.',
+  errorNoCanvasSelected: 'No canvas selected. Pick one from the list.',
+  errorUnexpectedContentResponse: 'Unexpected response from content script.',
+  errorNoContentScript: 'No content script responded in this tab.',
+  errorSnapshotTainted:
+    'Cannot save PNG snapshot: this canvas is cross-origin tainted.',
+  errorSelectedCanvasUnavailable:
+    'Selected canvas is no longer available. Rescan.',
+  errorPickerUnavailable: 'Page picker is unavailable in this tab.',
+  errorPermissionHint: 'Refresh the page and allow permissions.',
+  errorCanvasHint:
+    'Check that the canvas is visible and not cross-origin tainted.',
+  errorDefaultHint: 'Try refreshing the page.',
+  encodingMediaRecorder: 'MediaRecorder',
+  encodingWebCodecsMp4: 'WebCodecs MP4',
+  mimeAutoWebm: 'Auto (WebM)',
+  mimeWebmVp9: 'WebM VP9',
+  mimeWebmVp8: 'WebM VP8',
+  mimeMp4Native: 'MP4 (native, if supported)',
+}
+
+export function t(key: string, substitutions?: string | string[]): string {
+  const values = Array.isArray(substitutions)
+    ? substitutions
+    : substitutions
+      ? [substitutions]
+      : []
+  return values.reduce(
+    (result, value, index) => result.replace(`$${index + 1}`, String(value)),
+    MESSAGES[key] || key,
+  )
+}
