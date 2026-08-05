@@ -102,10 +102,21 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    width: 320px;
+    overflow-x: hidden;
+    background: var(--surface-canvas);
   }
 
   body {
+    width: 320px;
     margin: 0;
+    overflow-x: hidden;
+    background: var(--surface-canvas);
+  }
+
+  #root {
+    width: 320px;
+    overflow-x: hidden;
   }
 
   button,
@@ -765,6 +776,7 @@
 
   .field-select {
     display: block;
+    min-width: 0;
   }
 
   .field-select__label {
@@ -775,10 +787,12 @@
 
   .field-select__control-wrap {
     position: relative;
+    min-width: 0;
     margin-top: var(--space-1);
   }
 
   .field-select__control {
+    min-width: 0;
     width: 100%;
     padding: 6px 28px 6px var(--space-2);
     border: 1px solid var(--border-default);
