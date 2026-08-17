@@ -23,13 +23,13 @@
   ],
   "author": "Tsukasa Aoki",
   "license": "MIT",
-  "homepage": "https://github.com/atsekkei/html-canvas-recorder#readme",
+  "homepage": "https://github.com/roukara/html-canvas-recorder#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/atsekkei/html-canvas-recorder.git"
+    "url": "git+https://github.com/roukara/html-canvas-recorder.git"
   },
   "bugs": {
-    "url": "https://github.com/atsekkei/html-canvas-recorder/issues"
+    "url": "https://github.com/roukara/html-canvas-recorder/issues"
   },
   "packageManager": "pnpm@10.15.0",
   "devDependencies": {

@@ -32,7 +32,7 @@ This project uses `pnpm@10.15.0`, as declared in `package.json`.
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/atsekkei/html-canvas-recorder.git
+git clone https://github.com/roukara/html-canvas-recorder.git
 cd html-canvas-recorder
 pnpm install
 ```
