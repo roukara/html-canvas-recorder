@@ -673,6 +673,7 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    gap: var(--space-2);
     padding: 10px var(--space-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-control);
@@ -701,6 +702,25 @@
     text-transform: uppercase;
   }
 
+  /* Never shrinks: the summary beside it yields first. */
+  .settings-panel__marks {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--space-1);
+  }
+
+  .settings-panel__mark {
+    padding: 0 5px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-indicator);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    line-height: 15px;
+    white-space: nowrap;
+  }
+
   .settings-panel__summary {
     min-width: 0;
     overflow: hidden;
@@ -713,6 +733,8 @@
   }
 
   .settings-panel__chevron {
+    display: inline-flex;
+    flex-shrink: 0;
     color: var(--text-tertiary);
   }
 

@@ -5,7 +5,8 @@ import { t } from '../../utils/messages'
 interface StepInputProps {
   id: string
   label: string
-  value: number
+  /** null renders an empty field: nothing is set, and nothing is implied. */
+  value: number | null
   min?: number
   step?: number
   shiftStep?: number
@@ -25,6 +26,7 @@ export function StepInput({
 }: StepInputProps) {
   const clamp = (n: number) => (min !== undefined ? Math.max(min, n) : n)
   const getStep = (event: MouseEvent) => (event.shiftKey ? shiftStep : step)
+  const current = value ?? min ?? 0
 
   return (
     <div className="step-input">
@@ -33,7 +35,7 @@ export function StepInput({
         aria-label={t('decrease')}
         disabled={disabled}
         className="button button--step button--step-decrease"
-        onClick={(event) => onChange(clamp(value - getStep(event)))}
+        onClick={(event) => onChange(clamp(current - getStep(event)))}
       >
         <Minus size={12} />
       </button>
@@ -42,7 +44,7 @@ export function StepInput({
           type="number"
           id={id}
           aria-label={label}
-          value={value}
+          value={value === null ? '' : value}
           min={min}
           disabled={disabled}
           onChange={(e) => onChange(+e.target.value || 0)}
@@ -54,7 +56,7 @@ export function StepInput({
         aria-label={t('increase')}
         disabled={disabled}
         className="button button--step button--step-increase"
-        onClick={(event) => onChange(clamp(value + getStep(event)))}
+        onClick={(event) => onChange(clamp(current + getStep(event)))}
       >
         <Plus size={12} />
       </button>

@@ -53,6 +53,8 @@ const MESSAGES: Record<string, string> = {
   frame: 'frame',
   unsupportedMarker: '$1 x',
   delaySummary: 'delay $1s',
+  autoStopSummary: 'stop $1s',
+  pumpSummary: 'pump',
   infoFramePump:
     'Uses requestFrame to supply steady frames for still or offscreen canvases. Usually leave this off.',
   errorNoCanvasSelected: 'No canvas selected. Pick one from the list.',

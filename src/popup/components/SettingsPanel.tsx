@@ -7,6 +7,7 @@ import { Toggle } from './primitives/Toggle'
 import type { EncodingMode } from '../../types'
 import type { AppState } from '../state'
 import {
+  AUTO_STOP_DEFAULT_SEC,
   ENCODING_CHOICES,
   FPS_CHOICES,
   MIME_CHOICES,
@@ -77,13 +78,18 @@ export function SettingsPanel({
   const encodingLabelKey =
     ENCODING_CHOICES.find((m) => m.value === encodingMode)?.labelKey ??
     'encodingMediaRecorder'
-  const delayLabel =
-    startDelaySec > 0 ? ` · ${t('delaySummary', String(startDelaySec))}` : ''
   const scopeLabel =
     siteSettingsEnabled && settingsHost ? ` · ${t('siteProfileSummary')}` : ''
-  const summary = `${fps}fps · ${fmtMbps(bitratePreset)}Mbps · ${t(encodingLabelKey).toLowerCase()}${delayLabel}${scopeLabel}`
+  const summary = `${fps}fps · ${fmtMbps(bitratePreset)}Mbps · ${t(encodingLabelKey).toLowerCase()}${scopeLabel}`
+  // Settings that change what pressing record does. They are pinned rather
+  // than appended, because an appended mark is the first thing an ellipsis
+  // eats — and these are exactly the ones you lose by not seeing.
+  const armedMarks = [
+    startDelaySec > 0 ? t('delaySummary', String(startDelaySec)) : null,
+    autoStopSec > 0 ? t('autoStopSummary', String(autoStopSec)) : null,
+    pump ? t('pumpSummary') : null,
+  ].filter((mark): mark is string => mark !== null)
   const autoStopEnabled = autoStopSec > 0
-  const autoStopDisplaySec = autoStopEnabled ? autoStopSec : 10
 
   return (
     <div className="settings-panel">
@@ -99,6 +105,15 @@ export function SettingsPanel({
           <span className="settings-panel__label">{t('settings')}</span>
           {!isOpen && (
             <span className="settings-panel__summary">{summary}</span>
+          )}
+          {!isOpen && armedMarks.length > 0 && (
+            <span className="settings-panel__marks">
+              {armedMarks.map((mark) => (
+                <span key={mark} className="settings-panel__mark">
+                  {mark}
+                </span>
+              ))}
+            </span>
           )}
         </div>
         <span aria-hidden="true" className="settings-panel__chevron">
@@ -257,7 +272,7 @@ export function SettingsPanel({
                   <StepInput
                     id="autoStopSec"
                     label={t('autoStop')}
-                    value={autoStopDisplaySec}
+                    value={autoStopEnabled ? autoStopSec : null}
                     min={1}
                     disabled={!autoStopEnabled}
                     onChange={(n) => onSetAutoStopSec(Math.max(1, n))}
@@ -266,7 +281,7 @@ export function SettingsPanel({
                     label={t('autoStop')}
                     checked={autoStopEnabled}
                     onChange={(checked) => {
-                      onSetAutoStopSec(checked ? autoStopDisplaySec : 0)
+                      onSetAutoStopSec(checked ? AUTO_STOP_DEFAULT_SEC : 0)
                     }}
                   />
                 </div>

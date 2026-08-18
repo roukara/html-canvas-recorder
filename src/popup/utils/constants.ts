@@ -19,3 +19,7 @@ export const MIME_CHOICES = [
 export const PRESET_BPS = [1e6, 2e6, 4e6, 6e6, 8e6, 10e6, 12e6, 16e6]
 
 export const FPS_CHOICES = [15, 24, 30, 45, 60, 90, 120]
+
+/** Committed to state when auto-stop is switched on, so the field never
+    shows a number that is not stored. */
+export const AUTO_STOP_DEFAULT_SEC = 10
