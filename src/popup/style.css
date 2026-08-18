@@ -216,6 +216,7 @@
   }
 
   .button--command {
+    flex-shrink: 0;
     padding: 7px 10px;
   }
 
@@ -278,6 +279,23 @@
     border-left: 0;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+  }
+
+  /* Reserves the width of the widest string the slot can hold, so a label
+     that changes on its own never shifts its neighbour. */
+  .fixed-width {
+    display: inline-grid;
+    flex-shrink: 0;
+    justify-items: center;
+  }
+
+  .fixed-width > * {
+    grid-area: 1 / 1;
+  }
+
+  .fixed-width__ghost {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .button__spinner {
@@ -512,15 +530,6 @@
     color: var(--text-secondary);
   }
 
-  .canvas-row__snapshot-reason {
-    max-width: 64px;
-    color: var(--text-tertiary);
-    font-family: var(--font-mono);
-    font-size: 9px;
-    line-height: 1.15;
-    text-align: right;
-  }
-
   .status-dot {
     display: inline-block;
     flex-shrink: 0;
@@ -547,30 +556,23 @@
     background: var(--state-recording-line);
   }
 
+  /* A two-row readout with both rows always reserved. Neither the phase nor
+     an arriving failure can change this block's height, so nothing below it
+     ever moves. */
   .display-status {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-height: 24px;
+    gap: var(--space-1);
+    height: 46px;
     padding: 0 var(--space-3);
     font-size: 11px;
   }
 
-  /* The phase row keeps its height whether or not a failure is also shown.
-     With nothing to report it takes no space, so a failure alone sits where
-     it always did. */
   .display-status__phase {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
-    min-height: 24px;
-  }
-
-  .display-status__phase:empty {
-    min-height: 0;
-  }
-
-  .display-status--error {
-    padding-bottom: 6px;
+    height: 26px;
   }
 
   .display-status__recording {
@@ -620,29 +622,18 @@
   }
 
   .display-status__error {
+    flex-shrink: 0;
     min-width: 0;
-    color: var(--state-error);
-  }
-
-  /* Alongside a live phase row, the failure gets a rule to sit under. */
-  .display-status__error--during-capture {
-    margin-top: var(--space-1);
-    padding-top: var(--space-1);
-    border-top: 1px solid var(--border-default);
-  }
-
-  .display-status__error-message {
-    display: -webkit-box;
+    height: 16px;
     overflow: hidden;
-    line-height: 1.35;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    color: var(--state-error);
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .display-status__error-hint {
-    margin-top: var(--space-1);
     color: var(--text-secondary);
-    line-height: 1.35;
   }
 
   .display-status__saved {

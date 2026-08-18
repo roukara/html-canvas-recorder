@@ -2,6 +2,7 @@ import type { CanvasInfo, RecordingPhase } from '../../types'
 import type { KeyboardEvent } from 'react'
 import { ImageDown, MousePointer2, RefreshCcw } from '../icons'
 import { t } from '../utils/messages'
+import { FixedWidth } from './primitives/FixedWidth'
 import { DisplayStatus } from './DisplayStatus'
 
 interface Props {
@@ -72,11 +73,16 @@ function Entry({
     .join(' ')
 
   const snapshotDisabled = selectionLocked || !!canvas.tainted
+  // Carried by the control instead of a line of its own: a reason that comes
+  // and goes with the recording state would resize every row under it.
   const snapshotReason = canvas.tainted
     ? t('crossOriginTainted')
     : selectionLocked
       ? t('lockedWhileRecording')
       : null
+  const snapshotLabel = snapshotReason
+    ? `${t('saveCanvasPng', canvas.id)} - ${snapshotReason}`
+    : t('saveCanvasPng', canvas.id)
 
   return (
     <div
@@ -142,7 +148,8 @@ function Entry({
       <div className="canvas-row__snapshot">
         <button
           type="button"
-          aria-label={t('saveCanvasPng', canvas.id)}
+          aria-label={snapshotLabel}
+          title={snapshotReason ?? undefined}
           aria-disabled={snapshotDisabled}
           disabled={snapshotDisabled}
           onClick={() => onSaveSnapshot(canvas)}
@@ -150,9 +157,6 @@ function Entry({
         >
           <ImageDown size={13} />
         </button>
-        {snapshotReason && (
-          <span className="canvas-row__snapshot-reason">{snapshotReason}</span>
-        )}
       </div>
 
       {/* Selection dot */}
@@ -225,7 +229,9 @@ export function CanvasList({
           className="button button--command"
         >
           <MousePointer2 size={11} />
-          {picking ? t('pickingOnPage') : t('pickOnPage')}
+          <FixedWidth options={[t('pickOnPage'), t('pickingOnPage')]}>
+            {picking ? t('pickingOnPage') : t('pickOnPage')}
+          </FixedWidth>
         </button>
         <button
           type="button"
@@ -242,11 +248,13 @@ export function CanvasList({
           >
             <RefreshCcw size={11} />
           </span>
-          {scanning
-            ? t('scanning')
-            : canvasList.length > 0
-              ? t('rescan')
-              : t('scan')}
+          <FixedWidth options={[t('scan'), t('scanning'), t('rescan')]}>
+            {scanning
+              ? t('scanning')
+              : canvasList.length > 0
+                ? t('rescan')
+                : t('scan')}
+          </FixedWidth>
         </button>
       </div>
 

@@ -43,15 +43,9 @@ export function DisplayStatus({
   error,
 }: Props) {
   const displayError = error ? clarifyError(error) : null
-  const isIdle = phase === 'idle'
 
   return (
-    <div
-      className={[
-        'display-status',
-        displayError ? 'display-status--error' : '',
-      ].join(' ')}
-    >
+    <div className="display-status">
       <div className="display-status__phase" role="status" aria-live="polite">
         {phase === 'pending' ? (
           // Nothing is captured yet: no REC, no elapsed time.
@@ -96,21 +90,29 @@ export function DisplayStatus({
         ) : null}
       </div>
 
-      {displayError && (
-        <div
-          className={[
-            'display-status__error',
-            isIdle ? '' : 'display-status__error--during-capture',
-          ].join(' ')}
-          role="alert"
-          title={`${displayError.message} ${displayError.hint}`}
-        >
-          <div className="display-status__error-message">
-            {displayError.message}
-          </div>
-          <div className="display-status__error-hint">{displayError.hint}</div>
-        </div>
-      )}
+      {/* Always occupies its line, so an arriving failure never pushes the
+          canvas list down. One line, because the message comes from the page
+          and cannot be enumerated; the full text stays in the title. */}
+      <div
+        className="display-status__error"
+        role="alert"
+        title={
+          displayError
+            ? `${displayError.message} ${displayError.hint}`
+            : undefined
+        }
+      >
+        {displayError && (
+          <>
+            <span className="display-status__error-message">
+              {displayError.message}
+            </span>{' '}
+            <span className="display-status__error-hint">
+              {displayError.hint}
+            </span>
+          </>
+        )}
+      </div>
     </div>
   )
 }
