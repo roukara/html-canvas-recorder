@@ -1,5 +1,5 @@
 import fixWebmDuration from 'fix-webm-duration'
-import type { EncodingMode, FromContent } from '../../types'
+import type { EncodingMode, FromContent, RecordingStatus } from '../../types'
 import { toErrorMessage } from '../../utils/error'
 import { extFromMime, pickMime } from '../utils/media'
 import { fileFromBlob, saveViaAnchor as saveFileViaAnchor } from '../utils/save'
@@ -21,6 +21,8 @@ interface RecordingFile {
 type StartRecordingResult = 'started' | 'cancelled'
 
 interface PendingStart {
+  id: string
+  endsAtMs: number
   timer: number
   countdownTimer: number
   resolve: (result: StartRecordingResult) => void
@@ -123,6 +125,39 @@ function cleanupRecordingState(): void {
   stopTimerStartedAtMs = null
   navigationFlushStarted = false
   removeNavigationFlushListeners()
+}
+
+/** Elapsed capture time, excluding paused spans. Null when nothing is captured. */
+function getRecordedElapsedMs(): number | null {
+  if (recordingStartedAtMs == null) return null
+  const pausedNowMs =
+    pausedStartedAtMs == null ? 0 : performance.now() - pausedStartedAtMs
+  return Math.max(
+    0,
+    performance.now() - recordingStartedAtMs - totalPausedMs - pausedNowMs,
+  )
+}
+
+/** The recorder's own view of what is happening, for the popup to read. */
+export function getRecordingStatus(): RecordingStatus {
+  if (pendingStart) {
+    return {
+      phase: 'pending',
+      id: pendingStart.id,
+      remainingMs: Math.max(0, pendingStart.endsAtMs - performance.now()),
+    }
+  }
+  if (!currentRecordingId) return { phase: 'idle' }
+  const elapsedMs = getRecordedElapsedMs()
+  // Armed and wired up, but the encoder has not delivered a first frame yet.
+  if (elapsedMs == null) {
+    return { phase: 'pending', id: currentRecordingId, remainingMs: 0 }
+  }
+  return {
+    phase: pausedStartedAtMs == null ? 'recording' : 'paused',
+    id: currentRecordingId,
+    elapsedMs,
+  }
 }
 
 function scheduleAutoStop(maxDurationSec?: number): void {
@@ -339,15 +374,7 @@ async function handleRecordingStop(id: string): Promise<void> {
     clearStopTimer()
     clearFramePump()
 
-    const durationMs =
-      recordingStartedAtMs == null
-        ? null
-        : performance.now() -
-          recordingStartedAtMs -
-          totalPausedMs -
-          (pausedStartedAtMs == null
-            ? 0
-            : performance.now() - pausedStartedAtMs)
+    const durationMs = getRecordedElapsedMs()
     const file = await buildRecordingFile(id, durationMs)
     const saved = saveRecording(file)
     if (saved) notifyRecordingStopped(file.fileName, file.mime)
@@ -397,6 +424,8 @@ export async function startRecording(
           .catch(reject)
       }, delayMs)
       pendingStart = {
+        id,
+        endsAtMs: startedAt + delayMs,
         timer,
         countdownTimer,
         resolve,
@@ -484,6 +513,7 @@ export const stopRecording = () => {
 export const pauseRecording = () => {
   if (webCodecsRecorder) {
     webCodecsRecorder.pause()
+    pausedStartedAtMs = performance.now()
     notifyRecordingPaused()
     return
   }
@@ -501,6 +531,10 @@ export const pauseRecording = () => {
 export const resumeRecording = () => {
   if (webCodecsRecorder) {
     webCodecsRecorder.resume()
+    if (pausedStartedAtMs != null) {
+      totalPausedMs += performance.now() - pausedStartedAtMs
+      pausedStartedAtMs = null
+    }
     notifyRecordingResumed()
     return
   }

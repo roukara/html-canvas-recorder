@@ -1,4 +1,4 @@
-import type { CanvasInfo } from '../../types'
+import type { CanvasInfo, RecordingPhase } from '../../types'
 import type { KeyboardEvent } from 'react'
 import { ImageDown, MousePointer2, RefreshCcw } from '../icons'
 import { t } from '../utils/messages'
@@ -14,9 +14,9 @@ interface Props {
   } | null
   scanning: boolean
   picking: boolean
-  recording: boolean
-  paused: boolean
-  elapsed: string
+  phase: RecordingPhase
+  pendingRemainingMs: number
+  elapsedMs: number | null
   lastSaved: string | null
   error: string | null
   onPick: (c: CanvasInfo) => void
@@ -172,9 +172,9 @@ export function CanvasList({
   pickedCanvas,
   scanning,
   picking,
-  recording,
-  paused,
-  elapsed,
+  phase,
+  pendingRemainingMs,
+  elapsedMs,
   lastSaved,
   error,
   onPick,
@@ -182,7 +182,9 @@ export function CanvasList({
   onScan,
   onPickOnPage,
 }: Props) {
-  const pickOnPageDisabled = recording || picking
+  // A pending start is already armed, so selection is locked from 'pending' on.
+  const busy = phase !== 'idle'
+  const pickOnPageDisabled = busy || picking
   const handleListKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
 
@@ -244,9 +246,9 @@ export function CanvasList({
       </div>
 
       <DisplayStatus
-        recording={recording}
-        paused={paused}
-        elapsed={elapsed}
+        phase={phase}
+        pendingRemainingMs={pendingRemainingMs}
+        elapsedMs={elapsedMs}
         lastSaved={lastSaved}
         error={error}
       />
@@ -269,7 +271,7 @@ export function CanvasList({
                 isPicked={
                   pickedCanvas?.id === c.id && pickedCanvas.frameId === frameId
                 }
-                selectionLocked={recording}
+                selectionLocked={busy}
                 onPick={onPick}
                 onSaveSnapshot={onSaveSnapshot}
               />

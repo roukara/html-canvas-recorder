@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { CanvasInfo } from '../../types'
 import { isFromContentMessage } from '../../types'
-import { getState, setState } from '../state'
+import { getState, isBusy, setState } from '../state'
 import { sendToAllContentFrames, sendToContent } from '../utils/chrome-api'
 
 function getFrameId(sender: chrome.runtime.MessageSender): number {
@@ -25,7 +25,10 @@ function upsertCanvas(canvasList: CanvasInfo[], canvas: CanvasInfo): CanvasInfo[
   )
 }
 
-export function usePopupLifecycle(scan: () => Promise<void>) {
+export function usePopupLifecycle(
+  scan: () => Promise<void>,
+  refreshStatus: () => Promise<void>,
+) {
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const t = tabs[0]
@@ -38,23 +41,18 @@ export function usePopupLifecycle(scan: () => Promise<void>) {
     const listener = (msg: unknown, sender: chrome.runtime.MessageSender) => {
       if (isFromContentMessage(msg)) {
         switch (msg.type) {
+          // Recording events only prompt a re-read; the recorder stays the
+          // single source of the phase.
           case 'RECORDING_PENDING':
-            setState({ recording: true, paused: false })
-            break
           case 'RECORDING_STARTED':
-            setState({ recording: true, paused: false })
-            break
           case 'RECORDING_PAUSED':
-            setState({ paused: true })
-            break
           case 'RECORDING_RESUMED':
-            setState({ paused: false })
-            break
           case 'RECORDING_CANCELLED':
-            setState({ recording: false, paused: false })
+            void refreshStatus()
             break
           case 'RECORDING_STOPPED':
-            setState({ recording: false, paused: false, lastSaved: msg.fileName })
+            setState({ lastSaved: msg.fileName })
+            void refreshStatus()
             break
           case 'CANVAS_PICKED': {
             const frameId = getFrameId(sender)
@@ -106,7 +104,8 @@ export function usePopupLifecycle(scan: () => Promise<void>) {
             break
           }
           case 'ERROR':
-            setState({ recording: false, paused: false, error: msg.message })
+            setState({ error: msg.message })
+            void refreshStatus()
             break
         }
       }
@@ -115,8 +114,9 @@ export function usePopupLifecycle(scan: () => Promise<void>) {
 
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        const { tabId, recording, picking } = getState()
-        if (!tabId || recording || picking) return
+        const state = getState()
+        const { tabId, picking } = state
+        if (!tabId || isBusy(state) || picking) return
         try {
           void sendToAllContentFrames(tabId, { type: 'STOP_PICKER' })
         } catch {
@@ -143,5 +143,5 @@ export function usePopupLifecycle(scan: () => Promise<void>) {
       chrome.runtime.onMessage.removeListener(listener)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [scan])
+  }, [scan, refreshStatus])
 }

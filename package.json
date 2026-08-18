@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "format": "prettier --write .",
-    "check": "prettier --write . && eslint src"
+    "check": "prettier --write . && eslint src",
+    "verify": "tsc --noEmit && eslint src"
   },
   "keywords": [
     "chrome-extension",

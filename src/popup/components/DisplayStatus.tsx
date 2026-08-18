@@ -1,9 +1,11 @@
+import type { RecordingPhase } from '../../types'
+import { fmtCountdownSec, fmtElapsed } from '../utils/formatters'
 import { t } from '../utils/messages'
 
 interface Props {
-  recording: boolean
-  paused: boolean
-  elapsed: string
+  phase: RecordingPhase
+  pendingRemainingMs: number
+  elapsedMs: number | null
   lastSaved: string | null
   error: string | null
 }
@@ -31,24 +33,36 @@ function clarifyError(error: string): { message: string; hint: string } {
 
 // DisplayStatus: status readout for the selected canvas.
 export function DisplayStatus({
-  recording,
-  paused,
-  elapsed,
+  phase,
+  pendingRemainingMs,
+  elapsedMs,
   lastSaved,
   error,
 }: Props) {
   const displayError = error ? clarifyError(error) : null
+  const isIdle = phase === 'idle'
 
   return (
     <div
       className={[
         'display-status',
-        displayError && !recording ? 'display-status--error' : '',
+        displayError && isIdle ? 'display-status--error' : '',
       ].join(' ')}
-      role={displayError && !recording ? 'alert' : 'status'}
+      role={displayError && isIdle ? 'alert' : 'status'}
       aria-live="polite"
     >
-      {recording ? (
+      {phase === 'pending' ? (
+        // Nothing is captured yet: no REC, no elapsed time.
+        <div className="display-status__recording">
+          <span aria-hidden="true" className="status-dot status-dot--pending" />
+          <span className="display-status__label display-status__label--pending">
+            {t('starting')}
+          </span>
+          <span className="display-status__elapsed">
+            {t('countdownSeconds', fmtCountdownSec(pendingRemainingMs))}
+          </span>
+        </div>
+      ) : phase === 'recording' || phase === 'paused' ? (
         <div className="display-status__recording">
           <span
             aria-hidden="true"
@@ -57,12 +71,14 @@ export function DisplayStatus({
           <span
             className={[
               'display-status__label',
-              paused ? 'display-status__label--paused' : '',
+              phase === 'paused' ? 'display-status__label--paused' : '',
             ].join(' ')}
           >
-            {paused ? t('paused') : t('rec')}
+            {phase === 'paused' ? t('paused') : t('rec')}
           </span>
-          <span className="display-status__elapsed">{elapsed}</span>
+          <span className="display-status__elapsed">
+            {elapsedMs == null ? '' : fmtElapsed(elapsedMs)}
+          </span>
         </div>
       ) : displayError ? (
         <div

@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react'
 import type { AutoArmConfig, CanvasInfo } from '../../types'
 import { AUTO_ARM_KEY } from '../../types'
 import { toErrorMessage } from '../../utils/error'
-import { getState, setState } from '../state'
+import { getState, isBusy, setState } from '../state'
 import {
   getTabFrames,
   sendToAllContentFrames,
@@ -134,8 +134,9 @@ export function useCanvasActions() {
   }, [])
 
   const pickCanvas = useCallback(async (c: CanvasInfo) => {
-    const { tabId, recording } = getState()
-    if (recording) return
+    const state = getState()
+    const { tabId } = state
+    if (isBusy(state)) return
     const frameId = getFrameId(c)
     setState({
       pickedCanvas: { id: c.id, frameId, width: c.width, height: c.height },
@@ -156,8 +157,9 @@ export function useCanvasActions() {
   }, [])
 
   const saveSnapshot = useCallback(async (c: CanvasInfo) => {
-    const { tabId, recording } = getState()
-    if (!tabId || recording) return
+    const state = getState()
+    const { tabId } = state
+    if (!tabId || isBusy(state)) return
     if (c.tainted) {
       setState({
         error: t('errorSnapshotTainted'),
@@ -182,8 +184,9 @@ export function useCanvasActions() {
   }, [])
 
   const startPagePicker = useCallback(async () => {
-    const { tabId, recording } = getState()
-    if (!tabId || recording) return
+    const state = getState()
+    const { tabId } = state
+    if (!tabId || isBusy(state)) return
     setState({ error: null, picking: true })
     try {
       await sendToAllContentFrames(tabId, { type: 'START_PICKER' })

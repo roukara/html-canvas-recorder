@@ -7,6 +7,7 @@ import {
   stopHighlight,
 } from './canvas/highlighter'
 import {
+  getRecordingStatus,
   pauseRecording,
   resumeRecording,
   startRecording,
@@ -31,6 +32,13 @@ chrome.runtime.onMessage.addListener(
             canvases: listCanvases(),
           }
           sendResponse(response)
+          break
+        }
+        case 'GET_RECORDING_STATUS': {
+          sendResponse({
+            type: 'RECORDING_STATUS',
+            status: getRecordingStatus(),
+          } satisfies FromContent)
           break
         }
         case 'HIGHLIGHT': {

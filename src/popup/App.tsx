@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { useElapsedTime } from './hooks/useElapsedTime'
 import { CanvasList } from './components/CanvasList'
 import { ControlButtons } from './components/ControlButtons'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -7,6 +6,7 @@ import { useCanvasActions } from './hooks/useCanvasActions'
 import { useAppState } from './hooks/useAppState'
 import { usePopupLifecycle } from './hooks/usePopupLifecycle'
 import { useRecordingActions } from './hooks/useRecordingActions'
+import { useRecordingStatus } from './hooks/useRecordingStatus'
 import { useSettingsPersistence } from './hooks/useSettingsPersistence'
 import { MIME_CHOICES } from './utils/constants'
 import { t } from './utils/messages'
@@ -24,14 +24,14 @@ const mimeSupport = getMimeSupport()
 
 export function App() {
   const state = useAppState()
-  const elapsed = useElapsedTime(state.recording, state.paused)
+  const refreshStatus = useRecordingStatus()
   const settings = useSettingsPersistence()
   const { scan, pickCanvas, saveSnapshot, startPagePicker, armAndReload } =
     useCanvasActions()
   const { startRecording, stopRecording, pauseRecording, resumeRecording } =
-    useRecordingActions()
+    useRecordingActions(refreshStatus)
 
-  usePopupLifecycle(scan)
+  usePopupLifecycle(scan, refreshStatus)
 
   useEffect(() => {
     document.title = t('extensionName')
@@ -46,10 +46,10 @@ export function App() {
           canvasList={state.canvasList}
           pickedCanvas={state.pickedCanvas}
           scanning={state.scanning}
-          recording={state.recording}
           picking={state.picking}
-          paused={state.paused}
-          elapsed={elapsed}
+          phase={state.phase}
+          pendingRemainingMs={state.pendingRemainingMs}
+          elapsedMs={state.elapsedMs}
           lastSaved={state.lastSaved}
           error={state.error}
           onPick={pickCanvas}
@@ -63,8 +63,7 @@ export function App() {
 
         {/* RecordAction + ArmAction */}
         <ControlButtons
-          recording={state.recording}
-          paused={state.paused}
+          phase={state.phase}
           pickedCanvas={state.pickedCanvas}
           onStart={startRecording}
           onStop={stopRecording}

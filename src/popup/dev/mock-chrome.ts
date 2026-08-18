@@ -3,7 +3,7 @@
   Provides just enough behavior used by the popup hooks/components.
 */
 
-import type { FromContent, ToContent } from '../../types'
+import type { FromContent, RecordingStatus, ToContent } from '../../types'
 
 type RuntimeMessage = FromContent
 type RuntimeListener = (msg: RuntimeMessage) => void
@@ -95,8 +95,96 @@ type MockTab = { id: number; url: string }
 type QueryInfo = { active?: boolean; currentWindow?: boolean }
 type SendMessageOptions = { frameId?: number }
 
+/**
+ * Mirrors the real recorder's phases so the preview cannot show a state the
+ * extension could never be in.
+ */
+type MockRecorder = {
+  phase: 'idle' | 'pending' | 'recording' | 'paused'
+  startsAtMs: number
+  startedAtMs: number
+  pausedAtMs: number
+  totalPausedMs: number
+  id: string
+}
+
+const RECORDER_KEY = 'mock_recorder'
+
+const idleRecorder = (): MockRecorder => ({
+  phase: 'idle',
+  startsAtMs: 0,
+  startedAtMs: 0,
+  pausedAtMs: 0,
+  totalPausedMs: 0,
+  id: '',
+})
+
+/**
+ * The real recorder lives in the page and keeps running while the popup is
+ * closed, so the mock survives a reload too. Reloading the preview is the
+ * closest thing to closing and reopening the popup.
+ */
+function loadRecorder(): MockRecorder {
+  try {
+    const raw = sessionStorage.getItem(RECORDER_KEY)
+    return raw ? { ...idleRecorder(), ...JSON.parse(raw) } : idleRecorder()
+  } catch {
+    return idleRecorder()
+  }
+}
+
 function createTabs(runtime: ReturnType<typeof createRuntime>) {
   const activeTab: MockTab = { id: 999, url: 'https://example.com/' }
+  const recorder: MockRecorder = loadRecorder()
+
+  const saveRecorder = () => {
+    try {
+      sessionStorage.setItem(RECORDER_KEY, JSON.stringify(recorder))
+    } catch {
+      // preview only; ignore
+    }
+  }
+
+  const resetRecorder = () => {
+    Object.assign(recorder, idleRecorder())
+    saveRecorder()
+  }
+
+  const recorderStatus = (): RecordingStatus => {
+    // A pending start becomes a real recording once its delay elapses.
+    if (recorder.phase === 'pending' && Date.now() >= recorder.startsAtMs) {
+      recorder.phase = 'recording'
+      recorder.startedAtMs = recorder.startsAtMs
+      saveRecorder()
+      runtime.__emit({ type: 'RECORDING_STARTED' })
+    }
+    switch (recorder.phase) {
+      case 'idle':
+        return { phase: 'idle' }
+      case 'pending':
+        return {
+          phase: 'pending',
+          id: recorder.id,
+          remainingMs: Math.max(0, recorder.startsAtMs - Date.now()),
+        }
+      default: {
+        const pausedNowMs =
+          recorder.phase === 'paused' ? Date.now() - recorder.pausedAtMs : 0
+        return {
+          phase: recorder.phase,
+          id: recorder.id,
+          elapsedMs: Math.max(
+            0,
+            Date.now() -
+              recorder.startedAtMs -
+              recorder.totalPausedMs -
+              pausedNowMs,
+          ),
+        }
+      }
+    }
+  }
+
   return {
     async query(_queryInfo: QueryInfo, cb?: (tabs: MockTab[]) => void) {
       const result = [activeTab]
@@ -111,6 +199,8 @@ function createTabs(runtime: ReturnType<typeof createRuntime>) {
       const frameId = options?.frameId ?? 0
       // Simulate content-script responses
       switch (msg.type) {
+        case 'GET_RECORDING_STATUS':
+          return { type: 'RECORDING_STATUS', status: recorderStatus() }
         case 'GET_CANVASES':
           return {
             type: 'CANVASES',
@@ -161,28 +251,59 @@ function createTabs(runtime: ReturnType<typeof createRuntime>) {
             type: 'SNAPSHOT_SAVED',
             fileName: `mock-${nowStamp()}.png`,
           }
-        case 'PAUSE':
+        case 'PAUSE': {
+          if (recorder.phase !== 'recording') {
+            return { type: 'ERROR', message: 'Not recording' }
+          }
+          recorder.phase = 'paused'
+          recorder.pausedAtMs = Date.now()
+          saveRecorder()
           runtime.__emit({ type: 'RECORDING_PAUSED' })
           return { type: 'RECORDING_PAUSED' }
-        case 'RESUME':
+        }
+        case 'RESUME': {
+          if (recorder.phase !== 'paused') {
+            return { type: 'ERROR', message: 'Not paused' }
+          }
+          recorder.totalPausedMs += Date.now() - recorder.pausedAtMs
+          recorder.pausedAtMs = 0
+          recorder.phase = 'recording'
+          saveRecorder()
           runtime.__emit({ type: 'RECORDING_RESUMED' })
           return { type: 'RECORDING_RESUMED' }
+        }
         case 'START': {
-          // Notify popup as if recording started, then stopped shortly after
-          setTimeout(() => runtime.__emit({ type: 'RECORDING_STARTED' }), 200)
-          setTimeout(
-            () =>
-              runtime.__emit({
-                type: 'RECORDING_STOPPED',
-                fileName: `mock-${nowStamp()}.webm`,
-                mime: 'video/webm',
-              }),
-            1500,
-          )
+          if (recorder.phase !== 'idle') {
+            return { type: 'ERROR', message: 'Already recording' }
+          }
+          const delayMs = Math.max(0, Math.round((msg.startDelaySec ?? 0) * 1000))
+          recorder.id = msg.id
+          recorder.totalPausedMs = 0
+          recorder.pausedAtMs = 0
+          if (delayMs > 0) {
+            recorder.phase = 'pending'
+            recorder.startsAtMs = Date.now() + delayMs
+            saveRecorder()
+            runtime.__emit({ type: 'RECORDING_PENDING' })
+            return { type: 'RECORDING_PENDING' }
+          }
+          recorder.phase = 'recording'
+          recorder.startedAtMs = Date.now()
+          saveRecorder()
+          runtime.__emit({ type: 'RECORDING_STARTED' })
           return { type: 'RECORDING_STARTED' }
         }
         case 'STOP': {
-          // Stop immediately
+          if (recorder.phase === 'idle') {
+            return { type: 'ERROR', message: 'Not recording' }
+          }
+          // Cancelling a pending start produces no file.
+          if (recorder.phase === 'pending') {
+            resetRecorder()
+            runtime.__emit({ type: 'RECORDING_CANCELLED' })
+            return { type: 'ACK' }
+          }
+          resetRecorder()
           const payload: FromContent = {
             type: 'RECORDING_STOPPED',
             fileName: `mock-${nowStamp()}.webm`,

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
+import type { RecordingPhase } from '../../types'
 import { Pause, Play, RotateCcw, Square, Video } from '../icons'
 import { t } from '../utils/messages'
 
 interface Props {
-  recording: boolean
-  paused: boolean
+  phase: RecordingPhase
   pickedCanvas: { id: string } | null
   onStart: () => void
   onStop: () => void
@@ -35,8 +35,7 @@ function DisabledHint({
 // RecordAction: primary control for starting and stopping recording.
 // ArmAction: secondary control for recording immediately after page reload.
 export function ControlButtons({
-  recording,
-  paused,
+  phase,
   pickedCanvas,
   onStart,
   onStop,
@@ -44,12 +43,15 @@ export function ControlButtons({
   onResume,
   onArmAndReload,
 }: Props) {
-  const primaryDisabled = !pickedCanvas && !recording
-  const armDisabled = !pickedCanvas || recording
+  const busy = phase !== 'idle'
+  const capturing = phase === 'recording' || phase === 'paused'
+  const paused = phase === 'paused'
+  const primaryDisabled = !pickedCanvas && !busy
+  const armDisabled = !pickedCanvas || busy
   const primaryHint = primaryDisabled ? t('selectCanvasFirst') : null
   const armHint = !pickedCanvas
     ? t('selectCanvasFirst')
-    : recording
+    : busy
       ? t('stopRecordingBeforeReload')
       : null
 
@@ -59,15 +61,21 @@ export function ControlButtons({
       <DisabledHint hint={primaryHint}>
         <button
           type="button"
-          aria-pressed={recording}
+          aria-pressed={busy}
           disabled={primaryDisabled}
-          onClick={recording ? onStop : onStart}
+          onClick={busy ? onStop : onStart}
           className={[
             'button button--wide button--primary',
-            recording ? 'button--recording' : '',
+            capturing ? 'button--recording' : '',
+            phase === 'pending' ? 'button--pending' : '',
           ].join(' ')}
         >
-          {recording ? (
+          {phase === 'pending' ? (
+            <>
+              <Square size={13} />
+              <span>{t('cancelStart')}</span>
+            </>
+          ) : capturing ? (
             <>
               <Square size={13} />
               <span>{t('stopAndSave')}</span>
@@ -81,7 +89,7 @@ export function ControlButtons({
         </button>
       </DisabledHint>
 
-      {recording && (
+      {capturing && (
         <button
           type="button"
           aria-pressed={paused}

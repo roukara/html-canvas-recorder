@@ -63,7 +63,9 @@ export const showBadges = (show: boolean) => {
   ensureCanvasIds()
   ensureBadgesContainer()
   if (!badgesContainer) return
-  badgesContainer.innerHTML = ''
+  // Captured so the null check still holds inside the callback below.
+  const container = badgesContainer
+  container.innerHTML = ''
   badgeEntries = []
   const nodes = queryTrackedCanvases()
   nodes.forEach((el) => {
@@ -86,7 +88,7 @@ export const showBadges = (show: boolean) => {
       pointerEvents: 'none',
       boxShadow: '0 1px 2px rgba(0,0,255,.35)',
     } as CSSStyleDeclaration)
-    badgesContainer.appendChild(badge)
+    container.appendChild(badge)
     badgeEntries.push({ el, badge })
   })
   // Note: addGlobalListeners will be handled by highlighter module

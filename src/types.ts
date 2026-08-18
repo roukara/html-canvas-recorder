@@ -19,10 +19,22 @@ export type CanvasInfo = {
 
 export type EncodingMode = 'mediarecorder' | 'webcodecs'
 
+// ==== Recording Status ====
+// The recorder distinguishes these phases; the popup must not collapse them.
+// 'pending' = start delay is running, nothing has been captured yet.
+export type RecordingPhase = 'idle' | 'pending' | 'recording' | 'paused'
+
+export type RecordingStatus =
+  | { phase: 'idle' }
+  | { phase: 'pending'; id: string; remainingMs: number }
+  | { phase: 'recording'; id: string; elapsedMs: number }
+  | { phase: 'paused'; id: string; elapsedMs: number }
+
 // ==== Message Types ====
 // Popup → Content
 export type ToContent =
   | { type: 'GET_CANVASES' }
+  | { type: 'GET_RECORDING_STATUS' }
   | { type: 'HIGHLIGHT'; id: string | null }
   | { type: 'SHOW_BADGES'; show: boolean }
   | { type: 'START_PICKER' }
@@ -46,6 +58,7 @@ export type ToContent =
 // Content → Popup
 export type FromContent =
   | { type: 'CANVASES'; canvases: CanvasInfo[] }
+  | { type: 'RECORDING_STATUS'; status: RecordingStatus }
   | { type: 'RECORDING_PENDING' }
   | { type: 'RECORDING_STARTED' }
   | { type: 'RECORDING_PAUSED' }
@@ -60,12 +73,39 @@ export type FromContent =
 
 type WithType<T extends string> = { type: T }
 
+const isRecordingStatus = (value: unknown): value is RecordingStatus => {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as {
+    phase?: unknown
+    id?: unknown
+    remainingMs?: unknown
+    elapsedMs?: unknown
+  }
+  switch (payload.phase) {
+    case 'idle':
+      return true
+    case 'pending':
+      return (
+        typeof payload.id === 'string' && typeof payload.remainingMs === 'number'
+      )
+    case 'recording':
+    case 'paused':
+      return (
+        typeof payload.id === 'string' && typeof payload.elapsedMs === 'number'
+      )
+    default:
+      return false
+  }
+}
+
 export const isFromContentMessage = (value: unknown): value is FromContent => {
   if (!value || typeof value !== 'object') return false
   const type = (value as WithType<string>).type
   switch (type) {
     case 'CANVASES':
       return Array.isArray((value as { canvases?: unknown }).canvases)
+    case 'RECORDING_STATUS':
+      return isRecordingStatus((value as { status?: unknown }).status)
     case 'RECORDING_PENDING':
       return true
     case 'RECORDING_STARTED':

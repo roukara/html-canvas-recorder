@@ -530,6 +530,10 @@
     background: var(--state-selected);
   }
 
+  .status-dot--pending {
+    background: var(--border-strong);
+  }
+
   .status-dot--recording {
     animation: pulse-dot 2s ease-in-out infinite;
     background: var(--state-recording);
@@ -557,6 +561,10 @@
 
   .display-status__label {
     color: var(--state-recording);
+  }
+
+  .display-status__label--pending {
+    color: var(--text-secondary);
   }
 
   .display-status__label--paused {

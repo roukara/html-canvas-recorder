@@ -1,4 +1,4 @@
-import type { CanvasInfo, EncodingMode } from '../types'
+import type { CanvasInfo, EncodingMode, RecordingPhase } from '../types'
 
 export interface AppState {
   tabId: number | null
@@ -20,8 +20,14 @@ export interface AppState {
   } | null
   scanning: boolean
   picking: boolean
-  recording: boolean
-  paused: boolean
+  /** Read from the recorder itself, never inferred from the popup's own actions. */
+  phase: RecordingPhase
+  /** Frame the recorder is running in; null when nothing is running. */
+  recordingFrameId: number | null
+  /** Remaining start delay in ms. Only meaningful while phase is 'pending'. */
+  pendingRemainingMs: number
+  /** Real captured duration in ms, from the recorder. Null when nothing is captured. */
+  elapsedMs: number | null
   lastSaved: string | null
   error: string | null
 }
@@ -43,8 +49,10 @@ let _state: AppState = {
   pickedCanvas: null,
   scanning: false,
   picking: false,
-  recording: false,
-  paused: false,
+  phase: 'idle',
+  recordingFrameId: null,
+  pendingRemainingMs: 0,
+  elapsedMs: null,
   lastSaved: null,
   error: null,
 }
@@ -58,6 +66,16 @@ export function getState(): AppState {
 export function setState(patch: Partial<AppState>): void {
   _state = { ..._state, ...patch }
   for (const fn of listeners) fn(_state)
+}
+
+/** phase !== 'idle': a recording is armed or running, so selection is locked. */
+export function isBusy(state: AppState): boolean {
+  return state.phase !== 'idle'
+}
+
+/** Frames are actually being captured (or a capture is paused mid-way). */
+export function isCapturing(state: AppState): boolean {
+  return state.phase === 'recording' || state.phase === 'paused'
 }
 
 export function subscribe(fn: Listener): () => void {
