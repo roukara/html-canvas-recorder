@@ -974,14 +974,17 @@
     display: inline-flex;
   }
 
+  /* Opens downward like the other hint, and aligns to the mark rather than
+     centring on it: centred, a 220px panel ran off the 320px popup and the
+     explanation was clipped by the window edge. */
   .info-mark__tooltip {
     position: absolute;
-    bottom: 100%;
-    left: 50%;
+    top: 100%;
+    left: 0;
     z-index: 20;
     width: max-content;
-    max-width: 220px;
-    margin-bottom: var(--space-1);
+    max-width: 200px;
+    margin-top: var(--space-1);
     padding: 6px var(--space-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-control);
@@ -992,7 +995,6 @@
     opacity: 0;
     pointer-events: none;
     text-align: left;
-    transform: translateX(-50%);
     transition-duration: 140ms;
     transition-property: opacity, transform, visibility;
     transition-timing-function: var(--ease-touch);
@@ -1087,7 +1089,7 @@
 
   .info-mark__tooltip[data-open='true'] {
     opacity: 1;
-    transform: translateX(-50%) translateY(-2px);
+    transform: translateY(2px);
     visibility: visible;
   }
 }
