@@ -541,15 +541,27 @@
 
   .display-status {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
     min-height: 24px;
     padding: 0 var(--space-3);
     font-size: 11px;
   }
 
+  /* The phase row keeps its height whether or not a failure is also shown.
+     With nothing to report it takes no space, so a failure alone sits where
+     it always did. */
+  .display-status__phase {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .display-status__phase:empty {
+    min-height: 0;
+  }
+
   .display-status--error {
-    min-height: 40px;
-    padding-top: 6px;
     padding-bottom: 6px;
   }
 
@@ -580,6 +592,13 @@
   .display-status__error {
     min-width: 0;
     color: var(--state-error);
+  }
+
+  /* Alongside a live phase row, the failure gets a rule to sit under. */
+  .display-status__error--during-capture {
+    margin-top: var(--space-1);
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--border-default);
   }
 
   .display-status__error-message {
