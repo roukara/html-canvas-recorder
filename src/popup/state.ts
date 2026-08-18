@@ -6,7 +6,6 @@ export interface AppState {
   bitratePreset: number
   mime: string
   encodingMode: EncodingMode
-  pump: boolean
   autoStopSec: number
   startDelaySec: number
   settingsHost: string | null
@@ -40,7 +39,6 @@ let _state: AppState = {
   bitratePreset: 8_000_000,
   mime: '',
   encodingMode: 'mediarecorder',
-  pump: false,
   autoStopSec: 0,
   startDelaySec: 0,
   settingsHost: null,

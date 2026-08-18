@@ -841,14 +841,6 @@
     gap: var(--space-3);
   }
 
-  .settings-inline-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-secondary);
-    font-size: 12px;
-  }
-
   .field-select {
     display: block;
     min-width: 0;
@@ -969,53 +961,6 @@
     transform: translateX(18px);
   }
 
-  .info-mark {
-    position: relative;
-    display: inline-flex;
-  }
-
-  /* Opens downward like the other hint, and aligns to the mark rather than
-     centring on it: centred, a 220px panel ran off the 320px popup and the
-     explanation was clipped by the window edge. */
-  .info-mark__tooltip {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 20;
-    width: max-content;
-    max-width: 200px;
-    margin-top: var(--space-1);
-    padding: 6px var(--space-2);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-control);
-    background: var(--surface-canvas);
-    color: var(--text-secondary);
-    font-size: 11px;
-    line-height: 1.35;
-    opacity: 0;
-    pointer-events: none;
-    text-align: left;
-    transition-duration: 140ms;
-    transition-property: opacity, transform, visibility;
-    transition-timing-function: var(--ease-touch);
-    visibility: hidden;
-    white-space: pre-line;
-  }
-}
-
-@layer states {
-  .button:focus-visible,
-  .canvas-row__select:focus-visible,
-  .field-select__control:focus-visible,
-  .step-input__field:focus-visible,
-  .toggle:focus-visible,
-  .info-mark__button:focus-visible,
-  .settings-panel__trigger:focus-visible,
-  .disabled-hint:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
-  }
-
   .button:not(.button--static):not(:disabled):active {
     transform: scale(0.96);
   }
@@ -1075,10 +1020,6 @@
       outline: 1px solid var(--state-selected-hint);
     }
 
-    .info-mark__button:hover {
-      color: var(--text-secondary);
-    }
-
     .disabled-hint:hover .disabled-hint__tooltip,
     .disabled-hint:focus .disabled-hint__tooltip,
     .disabled-hint:focus-visible .disabled-hint__tooltip {
@@ -1087,9 +1028,4 @@
     }
   }
 
-  .info-mark__tooltip[data-open='true'] {
-    opacity: 1;
-    transform: translateY(2px);
-    visibility: visible;
-  }
 }

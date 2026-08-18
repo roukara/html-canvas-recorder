@@ -203,7 +203,6 @@ export function useCanvasActions() {
       fps,
       mime,
       bitratePreset,
-      pump,
       autoStopSec,
     } = getState()
     if (!tabId || !pickedCanvas) {
@@ -232,7 +231,6 @@ export function useCanvasActions() {
       fps,
       mime: mime || undefined,
       videoBitsPerSecond: bitratePreset,
-      pumpFrames: pump,
       maxDurationSec: autoStopSec > 0 ? autoStopSec : undefined,
       ts: Date.now(),
     }

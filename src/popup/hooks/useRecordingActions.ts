@@ -19,7 +19,6 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
       mime,
       bitratePreset,
       encodingMode,
-      pump,
       autoStopSec,
       startDelaySec,
     } = getState()
@@ -37,7 +36,6 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
           fps,
           mime: mime || undefined,
           videoBitsPerSecond: bitratePreset,
-          pumpFrames: pump,
           maxDurationSec: autoStopSec > 0 ? autoStopSec : undefined,
           encodingMode,
           startDelaySec: startDelaySec > 0 ? startDelaySec : undefined,

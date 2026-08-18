@@ -1,17 +1,15 @@
 import { useState, type ReactNode } from 'react'
 import { ChevronDown, ChevronUp } from '../icons'
 import { FieldSelect } from './primitives/FieldSelect'
-import { InfoMark } from './primitives/InfoMark'
 import { StepInput } from './primitives/StepInput'
 import { Toggle } from './primitives/Toggle'
-import type { EncodingMode } from '../../types'
 import type { AppState } from '../state'
 import {
   AUTO_STOP_DEFAULT_SEC,
-  ENCODING_CHOICES,
+  FORMAT_CHOICES,
   FPS_CHOICES,
-  MIME_CHOICES,
   PRESET_BPS,
+  findFormatChoice,
 } from '../utils/constants'
 import { fmtMbps } from '../utils/formatters'
 import { t } from '../utils/messages'
@@ -21,9 +19,7 @@ interface Props {
   supported: Record<string, boolean>
   onSetFps: (fps: number) => void
   onSetBitratePreset: (bps: number) => void
-  onSetMime: (mime: string) => void
-  onSetEncodingMode: (mode: EncodingMode) => void
-  onSetPump: (pump: boolean) => void
+  onSetFormat: (value: string) => void
   onSetAutoStopSec: (sec: number) => void
   onSetStartDelaySec: (sec: number) => void
   onSetSiteSettingsEnabled: (enabled: boolean) => void
@@ -50,9 +46,7 @@ export function SettingsPanel({
   supported,
   onSetFps,
   onSetBitratePreset,
-  onSetMime,
-  onSetEncodingMode,
-  onSetPump,
+  onSetFormat,
   onSetAutoStopSec,
   onSetStartDelaySec,
   onSetSiteSettingsEnabled,
@@ -63,7 +57,6 @@ export function SettingsPanel({
     bitratePreset,
     mime,
     encodingMode,
-    pump,
     autoStopSec,
     startDelaySec,
     settingsHost,
@@ -75,19 +68,16 @@ export function SettingsPanel({
   )
 
   // Current-value summary that remains visible while collapsed.
-  const encodingLabelKey =
-    ENCODING_CHOICES.find((m) => m.value === encodingMode)?.labelKey ??
-    'encodingMediaRecorder'
+  const format = findFormatChoice(encodingMode, mime)
   const scopeLabel =
     siteSettingsEnabled && settingsHost ? ` · ${t('siteProfileSummary')}` : ''
-  const summary = `${fps}fps · ${fmtMbps(bitratePreset)}Mbps · ${t(encodingLabelKey).toLowerCase()}${scopeLabel}`
+  const summary = `${fps}fps · ${fmtMbps(bitratePreset)}Mbps · ${t(format.labelKey).toLowerCase()}${scopeLabel}`
   // Settings that change what pressing record does. They are pinned rather
   // than appended, because an appended mark is the first thing an ellipsis
   // eats — and these are exactly the ones you lose by not seeing.
   const armedMarks = [
     startDelaySec > 0 ? t('delaySummary', String(startDelaySec)) : null,
     autoStopSec > 0 ? t('autoStopSummary', String(autoStopSec)) : null,
-    pump ? t('pumpSummary') : null,
   ].filter((mark): mark is string => mark !== null)
   const autoStopEnabled = autoStopSec > 0
 
@@ -160,31 +150,16 @@ export function SettingsPanel({
             </SettingsGroup>
 
             <SettingsGroup label={t('encodingSettings')}>
-              <FieldSelect
-                label={t('encoding')}
-                id="encodingMode"
-                value={encodingMode}
-                onChange={(v) => onSetEncodingMode(v as EncodingMode)}
-              >
-                {ENCODING_CHOICES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {t(opt.labelKey)}
-                  </option>
-                ))}
-              </FieldSelect>
-
               {/* Format and FPS side by side */}
               <div className="settings-grid">
                 <FieldSelect
                   label={t('format')}
-                  id="mime"
-                  value={mime}
-                  onChange={onSetMime}
-                  disabled={encodingMode === 'webcodecs'}
+                  id="format"
+                  value={format.value}
+                  onChange={onSetFormat}
                 >
-                  {MIME_CHOICES.map((opt) => {
-                    const isUnsupported =
-                      Boolean(opt.value) && supported[opt.value] === false
+                  {FORMAT_CHOICES.map((opt) => {
+                    const isUnsupported = supported[opt.value] === false
                     return (
                       <option
                         key={opt.value}
@@ -248,19 +223,6 @@ export function SettingsPanel({
                     {t('secondsUnit')}
                   </label>
                 </div>
-              </div>
-
-              {/* frame pump */}
-              <div className="settings-row">
-                <div className="settings-inline-label">
-                  <span>{t('framePump')}</span>
-                  <InfoMark content={t('infoFramePump')} />
-                </div>
-                <Toggle
-                  label={t('framePump')}
-                  checked={pump}
-                  onChange={onSetPump}
-                />
               </div>
 
               {/* auto-stop */}

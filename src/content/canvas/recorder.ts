@@ -42,11 +42,23 @@ let pausedStartedAtMs: number | null = null
 let totalPausedMs = 0
 let currentRecordingId: string | null = null
 let currentFps = 60
-let currentPumpFrames = false
+let pumpEngaged = false
 let navigationFlushStarted = false
 let navigationFlushListenersInstalled = false
 let stopRemainingMs: number | null = null
 let stopTimerStartedAtMs: number | null = null
+let lastFrameAtMs: number | null = null
+let starvationWatchdog: number | null = null
+
+/**
+ * A canvas that is not being redrawn produces no frames, and the recording
+ * comes out empty. Rather than asking the user to predict that, watch for the
+ * starvation and drive the frames ourselves. Once engaged the pump stays on:
+ * while it is running, real frames are indistinguishable from pumped ones, so
+ * there is nothing left to detect.
+ */
+const FRAME_STARVATION_MS = 1000
+const STARVATION_POLL_MS = 250
 
 function getCanvasForRecording(id: string): CanvasWithCapture {
   const el = findCanvasByRecorderId(id) as CanvasWithCapture | null
@@ -71,9 +83,9 @@ function createRecorder(
 function startFramePump(
   track: VideoTrackWithRequest | null,
   fps: number,
-  pumpFrames?: boolean,
 ): void {
-  if (!pumpFrames || !track?.requestFrame) return
+  if (!track?.requestFrame || pumpTimer != null) return
+  pumpEngaged = true
   const interval = Math.max(4, Math.round(1000 / Math.max(1, fps)))
   pumpTimer = window.setInterval(() => {
     try {
@@ -85,8 +97,37 @@ function startFramePump(
 }
 
 function clearFramePump(): void {
+  stopStarvationWatchdog()
   stopFramePump()
   capturedTrack = null
+}
+
+function stopStarvationWatchdog(): void {
+  if (starvationWatchdog != null) {
+    clearInterval(starvationWatchdog)
+    starvationWatchdog = null
+  }
+}
+
+/** Restarts the starvation clock: used at start and on resume. */
+function markFrameActivity(): void {
+  lastFrameAtMs = performance.now()
+}
+
+function startStarvationWatchdog(): void {
+  stopStarvationWatchdog()
+  markFrameActivity()
+  starvationWatchdog = window.setInterval(() => {
+    if (pausedStartedAtMs != null) return
+    if (pumpTimer != null) {
+      stopStarvationWatchdog()
+      return
+    }
+    if (lastFrameAtMs == null) return
+    if (performance.now() - lastFrameAtMs < FRAME_STARVATION_MS) return
+    startFramePump(capturedTrack, currentFps)
+    stopStarvationWatchdog()
+  }, STARVATION_POLL_MS)
 }
 
 function stopFramePump(): void {
@@ -121,6 +162,8 @@ function cleanupRecordingState(): void {
   pausedStartedAtMs = null
   totalPausedMs = 0
   currentRecordingId = null
+  pumpEngaged = false
+  lastFrameAtMs = null
   stopRemainingMs = null
   stopTimerStartedAtMs = null
   navigationFlushStarted = false
@@ -390,7 +433,6 @@ export async function startRecording(
   fps: number,
   mime?: string,
   videoBitsPerSecond?: number,
-  pumpFrames?: boolean,
   maxDurationSec?: number,
   encodingMode: EncodingMode = 'mediarecorder',
   startDelaySec = 0,
@@ -415,7 +457,6 @@ export async function startRecording(
           fps,
           mime,
           videoBitsPerSecond,
-          pumpFrames,
           maxDurationSec,
           encodingMode,
           0,
@@ -445,7 +486,6 @@ export async function startRecording(
       id,
       fps,
       videoBitsPerSecond,
-      pumpFrames,
       maxDurationSec,
       onStop: (file) => {
         notifyRecordingStopped(file.fileName, file.mime)
@@ -466,8 +506,6 @@ export async function startRecording(
   const track = stream.getVideoTracks()[0] as VideoTrackWithRequest | undefined
   capturedTrack = track ?? null
   currentFps = fps
-  currentPumpFrames = !!pumpFrames
-  startFramePump(capturedTrack, fps, pumpFrames)
 
   currentMime = pickMime(mime)
   chunks = []
@@ -479,10 +517,16 @@ export async function startRecording(
   scheduleAutoStop(maxDurationSec)
   addNavigationFlushListeners()
 
-  mediaRecorder.onstart = notifyRecordingStarted
+  mediaRecorder.onstart = () => {
+    notifyRecordingStarted()
+    startStarvationWatchdog()
+  }
 
   mediaRecorder.ondataavailable = (event) => {
-    if (event.data && event.data.size > 0) chunks.push(event.data)
+    if (event.data && event.data.size > 0) {
+      chunks.push(event.data)
+      markFrameActivity()
+    }
   }
 
   mediaRecorder.onstop = () => {
@@ -523,6 +567,7 @@ export const pauseRecording = () => {
   }
   mediaRecorder.pause()
   pausedStartedAtMs = performance.now()
+  stopStarvationWatchdog()
   stopFramePump()
   pauseStopTimer()
   notifyRecordingPaused()
@@ -547,7 +592,9 @@ export const resumeRecording = () => {
     totalPausedMs += performance.now() - pausedStartedAtMs
     pausedStartedAtMs = null
   }
-  startFramePump(capturedTrack, currentFps, currentPumpFrames)
+  // Already pumping before the pause: nothing left to detect, so resume it.
+  if (pumpEngaged) startFramePump(capturedTrack, currentFps)
+  else startStarvationWatchdog()
   scheduleStopTimer()
   notifyRecordingResumed()
 }

@@ -125,7 +125,6 @@ async function startSelectedRecording(): Promise<void> {
     fps: settings.fps,
     mime: settings.mime || undefined,
     videoBitsPerSecond: settings.bitratePreset,
-    pumpFrames: settings.pump,
     maxDurationSec:
       settings.autoStopSec > 0 ? settings.autoStopSec : undefined,
     encodingMode: settings.encodingMode,

@@ -83,7 +83,6 @@ chrome.runtime.onMessage.addListener(
             msg.fps,
             msg.mime,
             msg.videoBitsPerSecond,
-            msg.pumpFrames,
             msg.maxDurationSec,
             msg.encodingMode,
             msg.startDelaySec,

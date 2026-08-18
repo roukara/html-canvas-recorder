@@ -8,19 +8,26 @@ import { usePopupLifecycle } from './hooks/usePopupLifecycle'
 import { useRecordingActions } from './hooks/useRecordingActions'
 import { useRecordingStatus } from './hooks/useRecordingStatus'
 import { useSettingsPersistence } from './hooks/useSettingsPersistence'
-import { MIME_CHOICES } from './utils/constants'
+import { FORMAT_CHOICES } from './utils/constants'
 import { t } from './utils/messages'
 
-function getMimeSupport(): Record<string, boolean> {
-  const s: Record<string, boolean> = {}
-  for (const m of MIME_CHOICES.map((x) => x.value).filter(Boolean)) {
-    s[m] =
-      typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)
+function getFormatSupport(): Record<string, boolean> {
+  const support: Record<string, boolean> = {}
+  for (const choice of FORMAT_CHOICES) {
+    if (choice.encodingMode === 'webcodecs') {
+      support[choice.value] = typeof VideoEncoder !== 'undefined'
+    } else if (choice.mime) {
+      support[choice.value] =
+        typeof MediaRecorder !== 'undefined' &&
+        MediaRecorder.isTypeSupported(choice.mime)
+    } else {
+      support[choice.value] = true
+    }
   }
-  return s
+  return support
 }
 
-const mimeSupport = getMimeSupport()
+const formatSupport = getFormatSupport()
 
 export function App() {
   const state = useAppState()
@@ -78,12 +85,10 @@ export function App() {
         {/* SettingsDrawer */}
         <SettingsPanel
           state={state}
-          supported={mimeSupport}
+          supported={formatSupport}
           onSetFps={settings.setFps}
           onSetBitratePreset={settings.setBitratePreset}
-          onSetMime={settings.setMime}
-          onSetEncodingMode={settings.setEncodingMode}
-          onSetPump={settings.setPump}
+          onSetFormat={settings.setFormat}
           onSetAutoStopSec={settings.setAutoStopSec}
           onSetStartDelaySec={settings.setStartDelaySec}
           onSetSiteSettingsEnabled={settings.setSiteSettingsEnabled}

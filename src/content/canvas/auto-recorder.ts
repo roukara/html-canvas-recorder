@@ -89,7 +89,6 @@ function autoStartWithConfig(cfg: AutoArmConfig) {
       cfg.fps,
       cfg.mime,
       cfg.videoBitsPerSecond,
-      cfg.pumpFrames,
       cfg.maxDurationSec,
     ).catch((error: unknown) => {
       console.warn('[canvas-recorder] auto-arm failed to start recording', error)

@@ -5,7 +5,6 @@ export interface RecorderSettings {
   bitratePreset: number
   mime: string
   encodingMode: EncodingMode
-  pump: boolean
   autoStopSec: number
   startDelaySec: number
 }
@@ -20,7 +19,6 @@ export const DEFAULT_RECORDER_SETTINGS: RecorderSettings = {
   bitratePreset: 8_000_000,
   mime: '',
   encodingMode: 'mediarecorder',
-  pump: false,
   autoStopSec: 0,
   startDelaySec: 0,
 }
@@ -51,7 +49,6 @@ export function coerceRecorderSettings(value: unknown): RecorderSettings {
       raw.bitratePreset ?? DEFAULT_RECORDER_SETTINGS.bitratePreset,
     mime: raw.mime ?? DEFAULT_RECORDER_SETTINGS.mime,
     encodingMode: raw.encodingMode ?? DEFAULT_RECORDER_SETTINGS.encodingMode,
-    pump: raw.pump ?? DEFAULT_RECORDER_SETTINGS.pump,
     autoStopSec: raw.autoStopSec ?? DEFAULT_RECORDER_SETTINGS.autoStopSec,
     startDelaySec:
       raw.startDelaySec ?? DEFAULT_RECORDER_SETTINGS.startDelaySec,

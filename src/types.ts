@@ -46,7 +46,6 @@ export type ToContent =
       fps: number
       mime?: string
       videoBitsPerSecond?: number
-      pumpFrames?: boolean
       maxDurationSec?: number
       encodingMode?: EncodingMode
       startDelaySec?: number
@@ -147,7 +146,6 @@ export type AutoArmConfig = {
   fps: number
   mime?: string
   videoBitsPerSecond?: number
-  pumpFrames?: boolean
   maxDurationSec?: number // Auto-stop (optional)
   ts?: number // Reservation timestamp
 }

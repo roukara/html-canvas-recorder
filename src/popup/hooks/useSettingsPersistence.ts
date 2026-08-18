@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react'
-import type { EncodingMode } from '../../types'
 import {
   coerceRecorderSettings,
   getHostFromUrl,
@@ -8,7 +7,7 @@ import {
   type RecorderSettings,
 } from '../../settings'
 import { getState, setState } from '../state'
-import { STORAGE_KEY } from '../utils/constants'
+import { FORMAT_CHOICES, STORAGE_KEY } from '../utils/constants'
 
 function readSettingsStore(): Promise<ReturnType<typeof normalizeRecorderSettingsStore>> {
   return chrome.storage.local
@@ -28,7 +27,6 @@ function currentSettings(): RecorderSettings {
     bitratePreset,
     mime,
     encodingMode,
-    pump,
     autoStopSec,
     startDelaySec,
   } = getState()
@@ -37,7 +35,6 @@ function currentSettings(): RecorderSettings {
     bitratePreset,
     mime,
     encodingMode,
-    pump,
     autoStopSec,
     startDelaySec,
   })
@@ -54,7 +51,6 @@ function applySettings(settings: RecorderSettings): void {
     bitratePreset: settings.bitratePreset,
     mime: settings.mime,
     encodingMode: settings.encodingMode,
-    pump: settings.pump,
     autoStopSec: settings.autoStopSec,
     startDelaySec: settings.startDelaySec,
   })
@@ -108,25 +104,12 @@ export function useSettingsPersistence() {
     [scheduleSaveSettings],
   )
 
-  const setMime = useCallback(
-    (mime: string) => {
-      setState({ mime })
-      scheduleSaveSettings()
-    },
-    [scheduleSaveSettings],
-  )
-
-  const setEncodingMode = useCallback(
-    (encodingMode: EncodingMode) => {
-      setState({ encodingMode })
-      scheduleSaveSettings()
-    },
-    [scheduleSaveSettings],
-  )
-
-  const setPump = useCallback(
-    (pump: boolean) => {
-      setState({ pump })
+  /** One choice writes both stored fields; they are never set apart. */
+  const setFormat = useCallback(
+    (value: string) => {
+      const choice = FORMAT_CHOICES.find((c) => c.value === value)
+      if (!choice) return
+      setState({ encodingMode: choice.encodingMode, mime: choice.mime })
       scheduleSaveSettings()
     },
     [scheduleSaveSettings],
@@ -168,9 +151,7 @@ export function useSettingsPersistence() {
   return {
     setFps,
     setBitratePreset,
-    setMime,
-    setEncodingMode,
-    setPump,
+    setFormat,
     setAutoStopSec,
     setStartDelaySec,
     setSiteSettingsEnabled,

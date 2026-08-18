@@ -16,13 +16,17 @@ interface WebCodecsRecorderOptions {
   id: string
   fps: number
   videoBitsPerSecond?: number
-  pumpFrames?: boolean
   maxDurationSec?: number
   onStop: (file: WebCodecsRecordingFile) => void
   onError: (error: unknown) => void
 }
 
 const MP4_MIME = 'video/mp4' as const
+
+/** See the matching constants in recorder.ts: a canvas that is not redrawn
+    yields no frames, so the recorder drives them rather than asking. */
+const FRAME_STARVATION_MS = 1000
+const STARVATION_POLL_MS = 250
 
 export class WebCodecsCanvasRecorder {
   private readonly stream: MediaStream
@@ -35,8 +39,10 @@ export class WebCodecsCanvasRecorder {
   private readonly fileName: string
   private readonly onStop: (file: WebCodecsRecordingFile) => void
   private readonly onError: (error: unknown) => void
-  private readonly pumpFrames: boolean
   private pumpTimer: number | null = null
+  private starvationWatchdog: number | null = null
+  private lastFrameAtMs = 0
+  private pumpEngaged = false
   private stopTimer: number | null = null
   private stopTimerStartedAtMs: number | null = null
   private stopRemainingMs: number | null = null
@@ -66,7 +72,6 @@ export class WebCodecsCanvasRecorder {
     this.track = track
     this.onStop = options.onStop
     this.onError = options.onError
-    this.pumpFrames = !!options.pumpFrames
     this.frameDurationUs = Math.round(1_000_000 / Math.max(1, options.fps))
     const timestamp = new Date().toISOString().replaceAll(':', '-')
     this.fileName = `canvas-${options.id}-${timestamp}.mp4`
@@ -98,7 +103,7 @@ export class WebCodecsCanvasRecorder {
 
     const processor = new MediaStreamTrackProcessor<VideoFrame>({ track })
     this.reader = processor.readable.getReader()
-    this.startFramePump(options.fps, this.pumpFrames)
+    this.startStarvationWatchdog()
     this.scheduleAutoStop(options.maxDurationSec)
     void this.readFrames()
   }
@@ -107,6 +112,7 @@ export class WebCodecsCanvasRecorder {
     if (this.stopped) throw new Error('Not recording')
     if (this.paused) throw new Error('Recording is already paused')
     this.paused = true
+    this.stopStarvationWatchdog()
     this.stopFramePump()
     this.pauseStopTimer()
   }
@@ -115,7 +121,9 @@ export class WebCodecsCanvasRecorder {
     if (this.stopped) throw new Error('Not recording')
     if (!this.paused) throw new Error('Recording is not paused')
     this.paused = false
-    this.startFramePump(1_000_000 / this.frameDurationUs, this.pumpFrames)
+    // Already pumping before the pause: nothing left to detect, so resume it.
+    if (this.pumpEngaged) this.startFramePump(1_000_000 / this.frameDurationUs)
+    else this.startStarvationWatchdog()
     this.scheduleStopTimer()
   }
 
@@ -146,6 +154,7 @@ export class WebCodecsCanvasRecorder {
         })
         encodedFrame.close()
         this.encodedFrames++
+        this.lastFrameAtMs = performance.now()
       }
       await this.finish()
     } catch (error: unknown) {
@@ -177,9 +186,32 @@ export class WebCodecsCanvasRecorder {
     this.onError(error)
   }
 
-  private startFramePump(fps: number, pumpFrames: boolean): void {
-    if (!pumpFrames || !this.track.requestFrame) return
+  private startStarvationWatchdog(): void {
+    this.stopStarvationWatchdog()
+    this.lastFrameAtMs = performance.now()
+    this.starvationWatchdog = window.setInterval(() => {
+      if (this.paused || this.stopped) return
+      if (this.pumpTimer != null) {
+        this.stopStarvationWatchdog()
+        return
+      }
+      if (performance.now() - this.lastFrameAtMs < FRAME_STARVATION_MS) return
+      this.startFramePump(1_000_000 / this.frameDurationUs)
+      this.stopStarvationWatchdog()
+    }, STARVATION_POLL_MS)
+  }
+
+  private stopStarvationWatchdog(): void {
+    if (this.starvationWatchdog != null) {
+      clearInterval(this.starvationWatchdog)
+      this.starvationWatchdog = null
+    }
+  }
+
+  private startFramePump(fps: number): void {
+    if (!this.track.requestFrame) return
     this.stopFramePump()
+    this.pumpEngaged = true
     const interval = Math.max(4, Math.round(1000 / Math.max(1, fps)))
     this.pumpTimer = window.setInterval(() => {
       try {
@@ -237,6 +269,7 @@ export class WebCodecsCanvasRecorder {
   }
 
   private cleanupTimers(): void {
+    this.stopStarvationWatchdog()
     this.stopFramePump()
     this.clearStopTimer()
   }
