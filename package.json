@@ -8,10 +8,11 @@
     "dev:popup": "vite --open /src/popup/index.html",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src",
+    "lint": "eslint src e2e",
     "format": "prettier --write .",
     "check": "prettier --write . && eslint src",
-    "verify": "tsc --noEmit && eslint src"
+    "test": "playwright test",
+    "verify": "tsc --noEmit && eslint src e2e"
   },
   "keywords": [
     "chrome-extension",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.2.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@types/chrome": "^0.1.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

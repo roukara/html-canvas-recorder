@@ -3,7 +3,12 @@
   Provides just enough behavior used by the popup hooks/components.
 */
 
-import type { FromContent, RecordingStatus, ToContent } from '../../types'
+import type {
+  ErrorCode,
+  FromContent,
+  RecordingStatus,
+  ToContent,
+} from '../../types'
 
 type RuntimeMessage = FromContent
 type RuntimeListener = (msg: RuntimeMessage) => void
@@ -89,6 +94,31 @@ function nowStamp() {
     pad(d.getMinutes()) +
     pad(d.getSeconds())
   )
+}
+
+/**
+ * Failures cannot be reached by clicking, so tests name the failure here and
+ * then take the ordinary path through the UI. Read on every call so a test can
+ * break the page mid-recording without reloading it.
+ */
+type MockFaults = {
+  /** Frames that do not answer at all, as if no content script were there. */
+  silentFrames?: number[]
+  /** Message types the page answers with a failure. */
+  failing?: Partial<
+    Record<ToContent['type'], { message: string; code?: ErrorCode }>
+  >
+}
+
+const FAULTS_KEY = 'mock_faults'
+
+function readFaults(): MockFaults {
+  try {
+    const raw = sessionStorage.getItem(FAULTS_KEY)
+    return raw ? (JSON.parse(raw) as MockFaults) : {}
+  } catch {
+    return {}
+  }
 }
 
 type MockTab = { id: number; url: string }
@@ -197,6 +227,17 @@ function createTabs(runtime: ReturnType<typeof createRuntime>) {
       options?: SendMessageOptions,
     ): Promise<FromContent> {
       const frameId = options?.frameId ?? 0
+      const { silentFrames = [], failing = {} } = readFaults()
+      // A frame with no content script rejects, exactly as chrome.tabs does.
+      if (silentFrames.includes(frameId)) {
+        throw new Error(
+          'Could not establish connection. Receiving end does not exist.',
+        )
+      }
+      const failure = failing[msg.type]
+      if (failure) {
+        return { type: 'ERROR', message: failure.message, code: failure.code }
+      }
       // Simulate content-script responses
       switch (msg.type) {
         case 'GET_RECORDING_STATUS':
@@ -276,7 +317,10 @@ function createTabs(runtime: ReturnType<typeof createRuntime>) {
           if (recorder.phase !== 'idle') {
             return { type: 'ERROR', message: 'Already recording' }
           }
-          const delayMs = Math.max(0, Math.round((msg.startDelaySec ?? 0) * 1000))
+          const delayMs = Math.max(
+            0,
+            Math.round((msg.startDelaySec ?? 0) * 1000),
+          )
           recorder.id = msg.id
           recorder.totalPausedMs = 0
           recorder.pausedAtMs = 0
