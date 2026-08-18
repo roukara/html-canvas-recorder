@@ -312,14 +312,16 @@
     width: 100%;
   }
 
+  /* Opens downward. The canvas list sits above these controls, and a hint
+     about a control must never cover the canvases it is not describing. */
   .disabled-hint__tooltip {
     position: absolute;
-    bottom: 100%;
+    top: 100%;
     left: 50%;
     z-index: 20;
     width: max-content;
     max-width: 200px;
-    margin-bottom: var(--space-1);
+    margin-top: var(--space-1);
     padding: 6px var(--space-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-control);
@@ -337,15 +339,15 @@
 
   .disabled-hint__tooltip::after {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     width: 8px;
     height: 8px;
-    border-right: 1px solid var(--border-default);
-    border-bottom: 1px solid var(--border-default);
+    border-top: 1px solid var(--border-default);
+    border-left: 1px solid var(--border-default);
     background: var(--surface-canvas);
     content: '';
-    transform: translate(-50%, -50%) rotate(45deg);
+    transform: translate(-50%, 50%) rotate(45deg);
   }
 
   .canvas-list__toolbar {
@@ -424,12 +426,10 @@
     transition-timing-function: var(--ease-touch);
   }
 
+  /* Sits beside the preview, not on it. The number identifies the canvas,
+     which is a thing said about the canvas, so it is the side that moves. */
   .canvas-row__badge {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    z-index: 1;
-    max-width: calc(100% - 6px);
+    flex-shrink: 0;
     overflow: hidden;
     padding: 0 5px;
     border-radius: var(--radius-indicator);
@@ -481,14 +481,18 @@
   }
 
   .canvas-row__label {
-    flex-shrink: 0;
+    min-width: 0;
+    overflow: hidden;
     color: var(--text-primary);
     font-family: var(--font-mono);
     font-size: 12px;
     line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .canvas-row__dimensions {
+    flex-shrink: 0;
     color: var(--text-secondary);
     font-family: var(--font-mono);
     font-size: 11px;
@@ -497,6 +501,7 @@
   }
 
   .canvas-row__frame {
+    margin-left: var(--space-2);
     color: var(--text-tertiary);
     font-family: var(--font-mono);
     font-size: 10px;
@@ -1054,7 +1059,7 @@
     .disabled-hint:focus .disabled-hint__tooltip,
     .disabled-hint:focus-visible .disabled-hint__tooltip {
       opacity: 1;
-      transform: translateX(-50%) translateY(-2px);
+      transform: translateX(-50%) translateY(2px);
     }
   }
 

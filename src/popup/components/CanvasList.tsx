@@ -103,9 +103,8 @@ function Entry({
         onClick={() => onPick(canvas)}
         className="canvas-row__select"
       >
-        {/* Thumbnail */}
+        {/* Thumbnail: the canvas itself, kept clear of anything said about it */}
         <div className={thumbClassName}>
-          <span className="canvas-row__badge">#{canvas.id}</span>
           {canvas.thumb ? (
             <img
               src={canvas.thumb}
@@ -126,18 +125,20 @@ function Entry({
         {/* Metadata */}
         <div className="canvas-row__meta">
           <div className="canvas-row__line">
+            <span className="canvas-row__badge">#{canvas.id}</span>
             {label && <span className="canvas-row__label">{label}</span>}
             <span className="canvas-row__dimensions">
               {canvas.width}×{canvas.height}
             </span>
+          </div>
+          {/* Where it is, on its own line, so identity keeps the first one */}
+          <div className="canvas-row__position">
+            {t('position')} {canvas.x},{canvas.y}
             {frameId !== 0 && (
               <span className="canvas-row__frame">
                 {t('frame')} {frameId}
               </span>
             )}
-          </div>
-          <div className="canvas-row__position">
-            {t('position')} {canvas.x},{canvas.y}
             {canvas.tainted && (
               <span className="canvas-row__tainted">{t('tainted')}</span>
             )}
