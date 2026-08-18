@@ -68,17 +68,18 @@ export function DisplayStatus({
             </span>
           </div>
         ) : phase === 'recording' || phase === 'paused' ? (
-          <div className="display-status__recording">
+          // Filled while frames are being taken, hollow while held.
+          <div
+            className={[
+              'display-status__chip',
+              phase === 'paused' ? 'display-status__chip--paused' : '',
+            ].join(' ')}
+          >
             <span
               aria-hidden="true"
               className="status-dot status-dot--recording"
             />
-            <span
-              className={[
-                'display-status__label',
-                phase === 'paused' ? 'display-status__label--paused' : '',
-              ].join(' ')}
-            >
+            <span className="display-status__label">
               {phase === 'paused' ? t('paused') : t('rec')}
             </span>
             <span className="display-status__elapsed">

@@ -31,12 +31,14 @@ function Entry({
   canvas,
   isPicked,
   selectionLocked,
+  capturing,
   onPick,
   onSaveSnapshot,
 }: {
   canvas: CanvasInfo
   isPicked: boolean
   selectionLocked: boolean
+  capturing: boolean
   onPick: (c: CanvasInfo) => void
   onSaveSnapshot: (c: CanvasInfo) => void
 }) {
@@ -46,7 +48,9 @@ function Entry({
       ? `.${canvas.classes[0]}`
       : null
 
-  const isActive = isPicked && selectionLocked
+  // Selection locks from 'pending' on, but the capture marker only belongs on
+  // a canvas whose frames are actually being taken.
+  const isActive = isPicked && capturing
   const frameId = canvas.frameId ?? 0
   const rowClassName = [
     'canvas-row',
@@ -184,6 +188,7 @@ export function CanvasList({
 }: Props) {
   // A pending start is already armed, so selection is locked from 'pending' on.
   const busy = phase !== 'idle'
+  const capturing = phase === 'recording' || phase === 'paused'
   const pickOnPageDisabled = busy || picking
   const handleListKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
@@ -272,6 +277,7 @@ export function CanvasList({
                   pickedCanvas?.id === c.id && pickedCanvas.frameId === frameId
                 }
                 selectionLocked={busy}
+                capturing={capturing}
                 onPick={onPick}
                 onSaveSnapshot={onSaveSnapshot}
               />
