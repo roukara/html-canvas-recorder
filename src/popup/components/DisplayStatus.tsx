@@ -1,6 +1,7 @@
 import type { RecordingPhase } from '../../types'
 import { fmtCountdownSec, fmtElapsed } from '../utils/formatters'
 import { t } from '../utils/messages'
+import { FixedWidth } from './primitives/FixedWidth'
 
 interface Props {
   phase: RecordingPhase
@@ -74,7 +75,9 @@ export function DisplayStatus({
               className="status-dot status-dot--recording"
             />
             <span className="display-status__label">
-              {phase === 'paused' ? t('paused') : t('rec')}
+              <FixedWidth options={[t('rec'), t('paused')]}>
+                {phase === 'paused' ? t('paused') : t('rec')}
+              </FixedWidth>
             </span>
             <span className="display-status__elapsed">
               {elapsedMs == null ? '' : fmtElapsed(elapsedMs)}
