@@ -199,6 +199,12 @@ export function CanvasList({
   const busy = phase !== 'idle'
   const capturing = phase === 'recording' || phase === 'paused'
   const pickOnPageDisabled = busy || picking
+  // The selection is locked from 'pending' on, so a fresh list could not be
+  // acted on anyway. The opening scan still runs: with no list yet there is
+  // nothing to protect, and a popup reopened mid-recording must not come up
+  // claiming the page has no canvases.
+  const scanDisabled = scanning || busy
+  const lockReason = busy ? t('lockedWhileRecording') : undefined
   const handleListKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
 
@@ -230,6 +236,7 @@ export function CanvasList({
         <button
           type="button"
           disabled={pickOnPageDisabled}
+          title={lockReason}
           onClick={onPickOnPage}
           className="button button--command"
         >
@@ -240,7 +247,8 @@ export function CanvasList({
         </button>
         <button
           type="button"
-          disabled={scanning}
+          disabled={scanDisabled}
+          title={lockReason}
           onClick={onScan}
           className="button button--command"
         >
