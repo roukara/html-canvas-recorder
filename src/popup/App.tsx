@@ -59,6 +59,8 @@ export function App() {
           elapsedMs={state.elapsedMs}
           lastSaved={state.lastSaved}
           error={state.error}
+          errorCode={state.errorCode}
+          unreadableFrames={state.unreadableFrames}
           onPick={pickCanvas}
           onSaveSnapshot={saveSnapshot}
           onScan={scan}

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { CanvasInfo } from '../../types'
 import { isFromContentMessage } from '../../types'
-import { getState, isBusy, setState } from '../state'
+import { getState, isBusy, setError, setState } from '../state'
 import { sendToAllContentFrames, sendToContent } from '../utils/chrome-api'
 
 function getFrameId(sender: chrome.runtime.MessageSender): number {
@@ -104,7 +104,7 @@ export function usePopupLifecycle(
             break
           }
           case 'ERROR':
-            setState({ error: msg.message })
+            setError(msg.message, msg.code)
             void refreshStatus()
             break
         }
@@ -117,24 +117,11 @@ export function usePopupLifecycle(
         const state = getState()
         const { tabId, picking } = state
         if (!tabId || isBusy(state) || picking) return
-        try {
-          void sendToAllContentFrames(tabId, { type: 'STOP_PICKER' })
-        } catch {
-          /* ignore */
-        }
-        try {
-          void sendToAllContentFrames(tabId, { type: 'HIGHLIGHT', id: null })
-        } catch {
-          /* ignore */
-        }
-        try {
-          void sendToAllContentFrames(tabId, {
-            type: 'SHOW_BADGES',
-            show: false,
-          })
-        } catch {
-          /* ignore */
-        }
+        // sendToAllContentFrames settles every frame internally, so these
+        // never reject. There is also nobody left to tell: the popup is closing.
+        void sendToAllContentFrames(tabId, { type: 'STOP_PICKER' })
+        void sendToAllContentFrames(tabId, { type: 'HIGHLIGHT', id: null })
+        void sendToAllContentFrames(tabId, { type: 'SHOW_BADGES', show: false })
       }
     }
     document.addEventListener('visibilitychange', handleVisibility)

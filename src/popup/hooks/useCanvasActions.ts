@@ -1,8 +1,12 @@
 import { useCallback, useRef } from 'react'
 import type { AutoArmConfig, CanvasInfo } from '../../types'
 import { AUTO_ARM_KEY } from '../../types'
-import { toErrorMessage } from '../../utils/error'
-import { getState, isBusy, setState } from '../state'
+import {
+  RecorderError,
+  errorCodeOf,
+  toErrorMessage,
+} from '../../utils/error'
+import { clearError, getState, isBusy, setError, setState } from '../state'
 import {
   getTabFrames,
   sendToAllContentFrames,
@@ -36,7 +40,8 @@ export function useCanvasActions() {
   const scan = useCallback(async () => {
     const { tabId, pickedCanvas } = getState()
     if (!tabId) return
-    setState({ error: null, scanning: true })
+    clearError()
+    setState({ scanning: true })
 
     const minTime = new Promise<void>((resolve) => {
       minLoadTimerRef.current = setTimeout(resolve, 300)
@@ -67,11 +72,12 @@ export function useCanvasActions() {
           const canvases = responses.flatMap((response) =>
             response.status === 'fulfilled' ? response.value : [],
           )
-          if (
-            canvases.length > 0 ||
-            responses.some((r) => r.status === 'fulfilled')
-          ) {
-            setState({ canvasList: canvases })
+          // Three outcomes, kept apart: every frame answered; some frames
+          // could not be read; nothing answered at all.
+          const answered = responses.filter((r) => r.status === 'fulfilled')
+          const unreadableFrames = responses.length - answered.length
+          if (answered.length > 0) {
+            setState({ canvasList: canvases, unreadableFrames })
             await sendToAllContentFrames(tabId, {
               type: 'SHOW_BADGES',
               show: true,
@@ -107,23 +113,33 @@ export function useCanvasActions() {
                         getFrameId(exists),
                       )
                     } catch {
-                      /* ignore */
+                      // The page outline is a convenience; the selection the
+                      // popup shows is already correct, so failing to draw it
+                      // costs nothing worth interrupting the scan for.
                     }
                   }
                 }
               } catch {
-                /* ignore */
+                // No stored selection could be read, so nothing is restored
+                // and the list simply opens unselected. Nothing is lost that
+                // picking a canvas does not fix.
               }
             }
           } else {
-            throw new Error(t('errorNoContentScript'))
+            // Nothing could be read, so nothing is known: keeping the previous
+            // list on screen would present canvases we just failed to confirm.
+            setState({ canvasList: [], unreadableFrames })
+            throw new RecorderError(
+              t('errorNoContentScript'),
+              'no-content-script',
+            )
           }
         })(),
         minTime,
       ])
     } catch (err: unknown) {
       await minTime
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err), errorCodeOf(err))
     } finally {
       if (minLoadTimerRef.current !== null) {
         clearTimeout(minLoadTimerRef.current)
@@ -161,12 +177,10 @@ export function useCanvasActions() {
     const { tabId } = state
     if (!tabId || isBusy(state)) return
     if (c.tainted) {
-      setState({
-        error: t('errorSnapshotTainted'),
-      })
+      setError(t('errorSnapshotTainted'), 'cross-origin-tainted')
       return
     }
-    setState({ error: null })
+    clearError()
     try {
       const res = await sendToContent(
         tabId,
@@ -176,10 +190,10 @@ export function useCanvasActions() {
       if (res.type === 'SNAPSHOT_SAVED') {
         setState({ lastSaved: res.fileName })
       } else if (res.type === 'ERROR') {
-        setState({ error: res.message })
+        setError(res.message, res.code)
       }
     } catch (err: unknown) {
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err), errorCodeOf(err))
     }
   }, [])
 
@@ -187,11 +201,13 @@ export function useCanvasActions() {
     const state = getState()
     const { tabId } = state
     if (!tabId || isBusy(state)) return
-    setState({ error: null, picking: true })
+    clearError()
+    setState({ picking: true })
     try {
       await sendToAllContentFrames(tabId, { type: 'START_PICKER' })
     } catch (err: unknown) {
-      setState({ picking: false, error: toErrorMessage(err) })
+      setState({ picking: false })
+      setError(toErrorMessage(err), errorCodeOf(err))
     }
   }, [])
 
@@ -206,14 +222,14 @@ export function useCanvasActions() {
       autoStopSec,
     } = getState()
     if (!tabId || !pickedCanvas) {
-      setState({ error: t('errorNoCanvasSelected') })
+      setError(t('errorNoCanvasSelected'), 'no-canvas-selected')
       return
     }
-    setState({ error: null })
+    clearError()
 
     const targetCanvas = canvasList.find((c) => isSameCanvas(pickedCanvas, c))
     if (!targetCanvas) {
-      setState({ error: t('errorSelectedCanvasUnavailable') })
+      setError(t('errorSelectedCanvasUnavailable'), 'canvas-missing')
       return
     }
 

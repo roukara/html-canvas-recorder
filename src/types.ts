@@ -19,6 +19,22 @@ export type CanvasInfo = {
 
 export type EncodingMode = 'mediarecorder' | 'webcodecs'
 
+/**
+ * Why something failed, decided where the failure happens. The popup used to
+ * guess this by matching substrings of the message, which produced confident
+ * advice for causes nobody had established.
+ */
+export type ErrorCode =
+  | 'canvas-missing'
+  | 'capture-unsupported'
+  | 'encoder-unavailable'
+  | 'cross-origin-tainted'
+  | 'no-canvas-selected'
+  | 'no-content-script'
+  | 'already-recording'
+  | 'not-recording'
+  | 'save-failed'
+
 // ==== Recording Status ====
 // The recorder distinguishes these phases; the popup must not collapse them.
 // 'pending' = start delay is running, nothing has been captured yet.
@@ -67,7 +83,7 @@ export type FromContent =
   | { type: 'SNAPSHOT_SAVED'; fileName: string }
   | { type: 'CANVAS_PICKED'; canvas: CanvasInfo }
   | { type: 'PICKER_CANCELLED' }
-  | { type: 'ERROR'; message: string }
+  | { type: 'ERROR'; message: string; code?: ErrorCode }
   | { type: 'ACK' }
 
 type WithType<T extends string> = { type: T }

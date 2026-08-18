@@ -1,5 +1,5 @@
 import type { FromContent, ToContent } from '../types'
-import { toErrorMessage } from '../utils/error'
+import { errorCodeOf, toErrorMessage } from '../utils/error'
 import { initAutoArmBoot } from './canvas/auto-recorder'
 import {
   setHighlightPulsing,
@@ -73,6 +73,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({
               type: 'ERROR',
               message: 'Failed to save snapshot: ' + toErrorMessage(error),
+              code: errorCodeOf(error),
             } satisfies FromContent)
           }
           break
@@ -101,6 +102,7 @@ chrome.runtime.onMessage.addListener(
               sendResponse({
                 type: 'ERROR',
                 message: 'Failed to start recording: ' + toErrorMessage(error),
+                code: errorCodeOf(error),
               } satisfies FromContent),
             )
           return true
@@ -114,6 +116,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({
               type: 'ERROR',
               message: toErrorMessage(error),
+              code: errorCodeOf(error),
             } satisfies FromContent)
           }
           break
@@ -127,6 +130,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({
               type: 'ERROR',
               message: toErrorMessage(error),
+              code: errorCodeOf(error),
             } satisfies FromContent)
           }
           break
@@ -140,6 +144,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({
               type: 'ERROR',
               message: toErrorMessage(error),
+              code: errorCodeOf(error),
             } satisfies FromContent)
           }
           break
@@ -149,6 +154,7 @@ chrome.runtime.onMessage.addListener(
       sendResponse({
         type: 'ERROR',
         message: toErrorMessage(error),
+        code: errorCodeOf(error),
       } satisfies FromContent)
     }
     return true

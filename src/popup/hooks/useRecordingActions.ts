@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { FromContent } from '../../types'
 import { toErrorMessage } from '../../utils/error'
-import { getState, isBusy, isCapturing, setState } from '../state'
+import { clearError, getState, isBusy, isCapturing, setError } from '../state'
 import { sendToContent } from '../utils/chrome-api'
 import { t } from '../utils/messages'
 
@@ -23,10 +23,10 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
       startDelaySec,
     } = getState()
     if (!tabId || !pickedCanvas) {
-      setState({ error: t('errorNoCanvasSelected') })
+      setError(t('errorNoCanvasSelected'), 'no-canvas-selected')
       return
     }
-    setState({ error: null })
+    clearError()
     try {
       const res = await sendToContent<FromContent>(
         tabId,
@@ -42,9 +42,9 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
         },
         pickedCanvas.frameId,
       )
-      if (res.type === 'ERROR') setState({ error: res.message })
+      if (res.type === 'ERROR') setError(res.message, res.code)
     } catch (err: unknown) {
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err))
     } finally {
       await refreshStatus()
     }
@@ -54,16 +54,16 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
     const state = getState()
     const { tabId, recordingFrameId } = state
     if (!tabId || !isCapturing(state) || state.phase === 'paused') return
-    setState({ error: null })
+    clearError()
     try {
       const res = await sendToContent(
         tabId,
         { type: 'PAUSE' },
         recordingFrameId ?? undefined,
       )
-      if (res.type === 'ERROR') setState({ error: res.message })
+      if (res.type === 'ERROR') setError(res.message, res.code)
     } catch (err: unknown) {
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err))
     } finally {
       await refreshStatus()
     }
@@ -73,16 +73,16 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
     const state = getState()
     const { tabId, recordingFrameId } = state
     if (!tabId || state.phase !== 'paused') return
-    setState({ error: null })
+    clearError()
     try {
       const res = await sendToContent(
         tabId,
         { type: 'RESUME' },
         recordingFrameId ?? undefined,
       )
-      if (res.type === 'ERROR') setState({ error: res.message })
+      if (res.type === 'ERROR') setError(res.message, res.code)
     } catch (err: unknown) {
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err))
     } finally {
       await refreshStatus()
     }
@@ -92,16 +92,16 @@ export function useRecordingActions(refreshStatus: () => Promise<void>) {
     const state = getState()
     const { tabId, recordingFrameId, pickedCanvas } = state
     if (!tabId || !isBusy(state)) return
-    setState({ error: null })
+    clearError()
     try {
       const res = await sendToContent(
         tabId,
         { type: 'STOP' },
         recordingFrameId ?? pickedCanvas?.frameId,
       )
-      if (res.type === 'ERROR') setState({ error: res.message })
+      if (res.type === 'ERROR') setError(res.message, res.code)
     } catch (err: unknown) {
-      setState({ error: toErrorMessage(err) })
+      setError(toErrorMessage(err))
     } finally {
       await refreshStatus()
     }

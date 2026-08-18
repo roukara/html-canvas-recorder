@@ -1,4 +1,4 @@
-import type { CanvasInfo, RecordingPhase } from '../../types'
+import type { CanvasInfo, ErrorCode, RecordingPhase } from '../../types'
 import type { KeyboardEvent } from 'react'
 import { ImageDown, MousePointer2, RefreshCcw } from '../icons'
 import { t } from '../utils/messages'
@@ -20,6 +20,8 @@ interface Props {
   elapsedMs: number | null
   lastSaved: string | null
   error: string | null
+  errorCode: ErrorCode | null
+  unreadableFrames: number
   onPick: (c: CanvasInfo) => void
   onSaveSnapshot: (c: CanvasInfo) => void
   onScan: () => void
@@ -186,6 +188,8 @@ export function CanvasList({
   elapsedMs,
   lastSaved,
   error,
+  errorCode,
+  unreadableFrames,
   onPick,
   onSaveSnapshot,
   onScan,
@@ -265,6 +269,7 @@ export function CanvasList({
         elapsedMs={elapsedMs}
         lastSaved={lastSaved}
         error={error}
+        errorCode={errorCode}
       />
 
       {/* CanvasStream: item stream */}
@@ -274,7 +279,11 @@ export function CanvasList({
         className="canvas-list__display"
       >
         {canvasList.length === 0 && !scanning ? (
-          <div className="canvas-list__empty">{t('noCanvasesFound')}</div>
+          <div className="canvas-list__empty">
+            {unreadableFrames > 0
+              ? t('noCanvasesFoundUnreadable', String(unreadableFrames))
+              : t('noCanvasesFound')}
+          </div>
         ) : (
           canvasList.map((c) => {
             const frameId = c.frameId ?? 0
@@ -292,6 +301,12 @@ export function CanvasList({
               />
             )
           })
+        )}
+        {/* Frames that did not answer: what was found may not be all there is */}
+        {canvasList.length > 0 && unreadableFrames > 0 && (
+          <div className="canvas-list__note">
+            {t('unreadableFramesNote', String(unreadableFrames))}
+          </div>
         )}
       </section>
     </div>

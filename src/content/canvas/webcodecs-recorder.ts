@@ -1,5 +1,6 @@
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer'
 import { fileFromBlob, saveViaAnchor } from '../utils/save'
+import { RecorderError } from '../../utils/error'
 
 type VideoTrackWithRequest = MediaStreamTrack & { requestFrame?: () => void }
 type CanvasWithCapture = HTMLCanvasElement & {
@@ -52,21 +53,33 @@ export class WebCodecsCanvasRecorder {
 
   constructor(options: WebCodecsRecorderOptions) {
     if (typeof VideoEncoder === 'undefined') {
-      throw new Error('WebCodecs VideoEncoder is not available')
+      throw new RecorderError(
+        'WebCodecs VideoEncoder is not available',
+        'encoder-unavailable',
+      )
     }
     if (typeof MediaStreamTrackProcessor === 'undefined') {
-      throw new Error('MediaStreamTrackProcessor is not available')
+      throw new RecorderError(
+        'MediaStreamTrackProcessor is not available',
+        'encoder-unavailable',
+      )
     }
 
     const width = options.canvas.width || Math.round(options.canvas.clientWidth)
     const height =
       options.canvas.height || Math.round(options.canvas.clientHeight)
-    if (!width || !height) throw new Error('Canvas has no size')
+    if (!width || !height)
+      throw new RecorderError('Canvas has no size', 'capture-unsupported')
 
     const stream = options.canvas.captureStream?.(options.fps)
-    if (!stream) throw new Error('E_NO_CAPTURE_STREAM')
+    if (!stream)
+      throw new RecorderError('E_NO_CAPTURE_STREAM', 'capture-unsupported')
     const track = stream.getVideoTracks()[0] as VideoTrackWithRequest | undefined
-    if (!track) throw new Error('Canvas stream has no video track')
+    if (!track)
+      throw new RecorderError(
+        'Canvas stream has no video track',
+        'capture-unsupported',
+      )
 
     this.stream = stream
     this.track = track
@@ -109,8 +122,9 @@ export class WebCodecsCanvasRecorder {
   }
 
   pause(): void {
-    if (this.stopped) throw new Error('Not recording')
-    if (this.paused) throw new Error('Recording is already paused')
+    if (this.stopped) throw new RecorderError('Not recording', 'not-recording')
+    if (this.paused)
+      throw new RecorderError('Recording is already paused', 'not-recording')
     this.paused = true
     this.stopStarvationWatchdog()
     this.stopFramePump()
@@ -118,8 +132,9 @@ export class WebCodecsCanvasRecorder {
   }
 
   resume(): void {
-    if (this.stopped) throw new Error('Not recording')
-    if (!this.paused) throw new Error('Recording is not paused')
+    if (this.stopped) throw new RecorderError('Not recording', 'not-recording')
+    if (!this.paused)
+      throw new RecorderError('Recording is not paused', 'not-recording')
     this.paused = false
     // Already pumping before the pause: nothing left to detect, so resume it.
     if (this.pumpEngaged) this.startFramePump(1_000_000 / this.frameDurationUs)
@@ -128,7 +143,7 @@ export class WebCodecsCanvasRecorder {
   }
 
   stop(): void {
-    if (this.stopped) throw new Error('Not recording')
+    if (this.stopped) throw new RecorderError('Not recording', 'not-recording')
     this.stopped = true
     this.cleanupTimers()
     this.track.stop()

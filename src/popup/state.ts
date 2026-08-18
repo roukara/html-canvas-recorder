@@ -1,4 +1,9 @@
-import type { CanvasInfo, EncodingMode, RecordingPhase } from '../types'
+import type {
+  CanvasInfo,
+  EncodingMode,
+  ErrorCode,
+  RecordingPhase,
+} from '../types'
 
 export interface AppState {
   tabId: number | null
@@ -29,6 +34,10 @@ export interface AppState {
   elapsedMs: number | null
   lastSaved: string | null
   error: string | null
+  /** Null when the cause is genuinely unknown; never guessed from the text. */
+  errorCode: ErrorCode | null
+  /** Frames that did not answer the last scan. */
+  unreadableFrames: number
 }
 
 type Listener = (state: AppState) => void
@@ -53,6 +62,8 @@ let _state: AppState = {
   elapsedMs: null,
   lastSaved: null,
   error: null,
+  errorCode: null,
+  unreadableFrames: 0,
 }
 
 const listeners = new Set<Listener>()
@@ -64,6 +75,15 @@ export function getState(): AppState {
 export function setState(patch: Partial<AppState>): void {
   _state = { ..._state, ...patch }
   for (const fn of listeners) fn(_state)
+}
+
+/** Message and cause move together, so a stale code can never outlive its error. */
+export function setError(message: string, code?: ErrorCode): void {
+  setState({ error: message, errorCode: code ?? null })
+}
+
+export function clearError(): void {
+  setState({ error: null, errorCode: null })
 }
 
 /** phase !== 'idle': a recording is armed or running, so selection is locked. */

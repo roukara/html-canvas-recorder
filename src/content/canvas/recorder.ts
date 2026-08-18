@@ -1,6 +1,6 @@
 import fixWebmDuration from 'fix-webm-duration'
 import type { EncodingMode, FromContent, RecordingStatus } from '../../types'
-import { toErrorMessage } from '../../utils/error'
+import { RecorderError, toErrorMessage } from '../../utils/error'
 import { extFromMime, pickMime } from '../utils/media'
 import { fileFromBlob, saveViaAnchor as saveFileViaAnchor } from '../utils/save'
 import { hideCountdown, showCountdown } from '../ui/countdown'
@@ -62,9 +62,9 @@ const STARVATION_POLL_MS = 250
 
 function getCanvasForRecording(id: string): CanvasWithCapture {
   const el = findCanvasByRecorderId(id) as CanvasWithCapture | null
-  if (!el) throw new Error('Canvas not found')
+  if (!el) throw new RecorderError('Canvas not found', 'canvas-missing')
   if (typeof el.captureStream !== 'function') {
-    throw new Error('E_NO_CAPTURE_STREAM')
+    throw new RecorderError('E_NO_CAPTURE_STREAM', 'capture-unsupported')
   }
   return el
 }
@@ -347,6 +347,7 @@ function notifySaveError(error: unknown): void {
   const message: FromContent = {
     type: 'ERROR',
     message: 'Failed to save: ' + toErrorMessage(error),
+    code: 'save-failed',
   }
   try {
     chrome.runtime.sendMessage(message)
@@ -437,7 +438,7 @@ export async function startRecording(
   encodingMode: EncodingMode = 'mediarecorder',
   startDelaySec = 0,
 ): Promise<StartRecordingResult> {
-  if (pendingStart) throw new Error('Already recording')
+  if (pendingStart) throw new RecorderError('Already recording', 'already-recording')
   const delayMs = Math.max(0, Math.round(startDelaySec * 1000))
   if (delayMs > 0) {
     const startedAt = performance.now()
@@ -475,7 +476,8 @@ export async function startRecording(
   }
 
   const el = getCanvasForRecording(id)
-  if (mediaRecorder || webCodecsRecorder) throw new Error('Already recording')
+  if (mediaRecorder || webCodecsRecorder)
+    throw new RecorderError('Already recording', 'already-recording')
 
   if (encodingMode === 'webcodecs') {
     currentRecordingId = id
@@ -501,7 +503,7 @@ export async function startRecording(
   }
 
   const stream = el.captureStream(fps)
-  if (!stream) throw new Error('E_NO_CAPTURE_STREAM')
+  if (!stream) throw new RecorderError('E_NO_CAPTURE_STREAM', 'capture-unsupported')
 
   const track = stream.getVideoTracks()[0] as VideoTrackWithRequest | undefined
   capturedTrack = track ?? null
@@ -549,7 +551,7 @@ export const stopRecording = () => {
     webCodecsRecorder.stop()
     return
   }
-  if (!mediaRecorder) throw new Error('Not recording')
+  if (!mediaRecorder) throw new RecorderError('Not recording', 'not-recording')
   clearStopTimer()
   mediaRecorder.stop()
 }
@@ -561,9 +563,9 @@ export const pauseRecording = () => {
     notifyRecordingPaused()
     return
   }
-  if (!mediaRecorder) throw new Error('Not recording')
+  if (!mediaRecorder) throw new RecorderError('Not recording', 'not-recording')
   if (mediaRecorder.state !== 'recording') {
-    throw new Error('Recording is not active')
+    throw new RecorderError('Recording is not active', 'not-recording')
   }
   mediaRecorder.pause()
   pausedStartedAtMs = performance.now()
@@ -583,9 +585,9 @@ export const resumeRecording = () => {
     notifyRecordingResumed()
     return
   }
-  if (!mediaRecorder) throw new Error('Not recording')
+  if (!mediaRecorder) throw new RecorderError('Not recording', 'not-recording')
   if (mediaRecorder.state !== 'paused') {
-    throw new Error('Recording is not paused')
+    throw new RecorderError('Recording is not paused', 'not-recording')
   }
   mediaRecorder.resume()
   if (pausedStartedAtMs != null) {

@@ -1,6 +1,7 @@
 import { updateBadgesPositions } from '../ui/badges'
 import { HIGHLIGHT_ID } from '../utils/dom'
 import { ensureCanvasIds, findCanvasByRecorderId } from './dom'
+import { RecorderError } from '../../utils/error'
 
 /** UI state (content) */
 let box: HTMLDivElement | null = null
@@ -130,7 +131,7 @@ const scheduleUpdate = () => {
 export const startHighlight = (id: string) => {
   ensureCanvasIds()
   const el = findCanvasByRecorderId(id)
-  if (!el) throw new Error('Canvas not found')
+  if (!el) throw new RecorderError('Canvas not found', 'canvas-missing')
   ensureBox()
   targetEl = el
   addGlobalListeners()

@@ -1,4 +1,4 @@
-import type { RecordingPhase } from '../../types'
+import type { ErrorCode, RecordingPhase } from '../../types'
 import { fmtCountdownSec, fmtElapsed } from '../utils/formatters'
 import { t } from '../utils/messages'
 import { FixedWidth } from './primitives/FixedWidth'
@@ -9,27 +9,26 @@ interface Props {
   elapsedMs: number | null
   lastSaved: string | null
   error: string | null
+  errorCode: ErrorCode | null
 }
 
-function clarifyError(error: string): { message: string; hint: string } {
-  const normalized = error.toLowerCase()
+/**
+ * A hint only for causes that were established at the source. An unrecognised
+ * failure gets its message and nothing else — inventing advice for a cause
+ * nobody determined is the same as claiming to know it.
+ */
+const HINT_BY_CODE: Partial<Record<ErrorCode, string>> = {
+  'canvas-missing': 'hintCanvasMissing',
+  'capture-unsupported': 'hintCaptureUnsupported',
+  'encoder-unavailable': 'hintEncoderUnavailable',
+  'cross-origin-tainted': 'hintCrossOriginTainted',
+  'no-content-script': 'hintNoContentScript',
+}
 
-  if (normalized.includes('permission')) {
-    return {
-      message: error,
-      hint: t('errorPermissionHint'),
-    }
-  }
-  if (normalized.includes('canvas')) {
-    return {
-      message: error,
-      hint: t('errorCanvasHint'),
-    }
-  }
-  return {
-    message: error,
-    hint: t('errorDefaultHint'),
-  }
+function hintFor(code: ErrorCode | null): string | null {
+  if (!code) return null
+  const key = HINT_BY_CODE[code]
+  return key ? t(key) : null
 }
 
 // DisplayStatus: status readout for the selected canvas.
@@ -42,8 +41,9 @@ export function DisplayStatus({
   elapsedMs,
   lastSaved,
   error,
+  errorCode,
 }: Props) {
-  const displayError = error ? clarifyError(error) : null
+  const hint = hintFor(errorCode)
 
   return (
     <div className="display-status">
@@ -83,7 +83,7 @@ export function DisplayStatus({
               {elapsedMs == null ? '' : fmtElapsed(elapsedMs)}
             </span>
           </div>
-        ) : lastSaved && !displayError ? (
+        ) : lastSaved && !error ? (
           <div className="display-status__saved">
             <span className="display-status__saved-label">{t('saved')}</span>
             <span className="display-status__saved-file" title={lastSaved}>
@@ -99,20 +99,17 @@ export function DisplayStatus({
       <div
         className="display-status__error"
         role="alert"
-        title={
-          displayError
-            ? `${displayError.message} ${displayError.hint}`
-            : undefined
-        }
+        title={error ? [error, hint].filter(Boolean).join(' ') : undefined}
       >
-        {displayError && (
+        {error && (
           <>
-            <span className="display-status__error-message">
-              {displayError.message}
-            </span>{' '}
-            <span className="display-status__error-hint">
-              {displayError.hint}
-            </span>
+            <span className="display-status__error-message">{error}</span>
+            {hint && (
+              <>
+                {' '}
+                <span className="display-status__error-hint">{hint}</span>
+              </>
+            )}
           </>
         )}
       </div>
