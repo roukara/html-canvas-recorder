@@ -23,9 +23,9 @@
        Tones within a hue are the same meaning at a different weight.
        Orange is vivid because it is used as a fill under black text, not as
        text on a light surface — that is what buys the saturation. */
-    --color-orange: #ff6a00; /* fills: 7.3:1 under black text */
-    --color-orange-deep: #c05600; /* lines and text: 4.6:1 on white */
-    --color-orange-hover: #e85f00;
+    --color-orange: #ff8000; /* fills: 8.3:1 under black text */
+    --color-orange-deep: #cc6600; /* lines only: 3.4:1 on the surface */
+    --color-orange-hover: #eb7600;
     --color-red: #d90000;
 
     /* color: semantic tokens */
@@ -595,8 +595,9 @@
   }
 
   /* The readout is a solid mark, not coloured text. That is what lets the
-     orange be vivid: black on the fill reads at 7.3:1, where orange text on
-     a light surface would have capped out around #c05600. */
+     orange be vivid: black on the fill reads at 8.3:1, where orange text on
+     this surface would have to darken to #ad5400 to clear 4.5:1. Nothing here
+     is coloured text, so the hue is only ever held to the 3:1 line rule. */
   .display-status__chip {
     display: inline-flex;
     align-items: center;
@@ -613,11 +614,14 @@
     box-shadow: none;
   }
 
-  /* Held: the fill drops out, the hue stays. Same meaning, less weight. */
+  /* Held: the fill drops out, the hue stays in the outline and the dot. The
+     word itself stays black, like REC — the hue is never what has to be read,
+     which is what lets the line tone stay bright instead of darkening to
+     #ad5400 to clear 4.5:1 as text. */
   .display-status__chip--paused {
     border-color: var(--state-recording-line);
     background: transparent;
-    color: var(--state-recording-line);
+    color: var(--color-black);
   }
 
   .display-status__chip--paused .status-dot--recording {
@@ -1035,5 +1039,4 @@
       transform: translateX(-50%) translateY(2px);
     }
   }
-
 }
