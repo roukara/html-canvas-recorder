@@ -2,6 +2,12 @@ import { updateBadgesPositions } from '../ui/badges'
 import { HIGHLIGHT_ID } from '../utils/dom'
 import { ensureCanvasIds, findCanvasByRecorderId } from './dom'
 import { RecorderError } from '../../utils/error'
+import {
+  OVERLAY_HALO,
+  OVERLAY_RECORDING,
+  OVERLAY_RECORDING_DIM,
+  OVERLAY_SELECTED,
+} from '../ui/palette'
 
 /** UI state (content) */
 let box: HTMLDivElement | null = null
@@ -25,11 +31,11 @@ const ensureBox = () => {
     box.id = HIGHLIGHT_ID
     Object.assign(box.style, {
       position: 'fixed',
-      border: '2px solid #00f',
+      border: `2px solid ${OVERLAY_SELECTED}`,
       borderRadius: '8px',
       pointerEvents: 'none',
       zIndex: '2147483647',
-      boxShadow: '0 0 0 2px rgba(0,0,255,.2)',
+      boxShadow: `0 0 0 2px ${OVERLAY_HALO}`,
     } as CSSStyleDeclaration)
     document.documentElement.appendChild(box)
   }
@@ -41,8 +47,8 @@ const ensurePulseStyles = () => {
   styleEl = document.createElement('style')
   styleEl.textContent = `
 @keyframes __crx_recording_border_pulse {
-  0%, 100% { border-color: rgba(255,56,60,1); }
-  50% { border-color: rgba(255,56,60,.3); }
+  0%, 100% { border-color: ${OVERLAY_RECORDING}; }
+  50% { border-color: ${OVERLAY_RECORDING_DIM}; }
 }`
   document.documentElement.appendChild(styleEl)
 }
@@ -51,12 +57,12 @@ const applyBoxStyle = () => {
   if (!box) return
   if (pulsing) {
     ensurePulseStyles()
-    box.style.border = '2px solid rgba(255,56,60,1)'
-    box.style.boxShadow = '0 0 0 2px rgba(255,56,60,.2)'
+    box.style.border = `2px solid ${OVERLAY_RECORDING}`
+    box.style.boxShadow = `0 0 0 2px ${OVERLAY_HALO}`
     box.style.animation = '__crx_recording_border_pulse 2s ease infinite'
   } else {
-    box.style.border = '2px solid #00f'
-    box.style.boxShadow = '0 0 0 2px rgba(0,0,255,.2)'
+    box.style.border = `2px solid ${OVERLAY_SELECTED}`
+    box.style.boxShadow = `0 0 0 2px ${OVERLAY_HALO}`
     box.style.animation = ''
   }
 }

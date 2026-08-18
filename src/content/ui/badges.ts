@@ -4,6 +4,7 @@ import {
   queryTrackedCanvases,
 } from '../canvas/dom'
 import { BADGES_CONTAINER_ID } from '../utils/dom'
+import { OVERLAY_HALO, OVERLAY_ON_DARK, OVERLAY_SELECTED } from './palette'
 
 /** badges (number labels) */
 let badgesContainer: HTMLDivElement | null = null
@@ -78,15 +79,15 @@ export const showBadges = (show: boolean) => {
     Object.assign(badge.style, {
       position: 'absolute',
       transform: `translate(${Math.max(0, r.left) + 4}px, ${Math.max(0, r.top) + 4}px)`,
-      background: '#00f',
-      color: '#fff',
+      background: OVERLAY_SELECTED,
+      color: OVERLAY_ON_DARK,
       fontSize: '12px',
       lineHeight: '18px',
       padding: '0 6px',
       borderRadius: '9999px',
       fontFamily: 'ui-sans-serif, system-ui, Arial',
       pointerEvents: 'none',
-      boxShadow: '0 1px 2px rgba(0,0,255,.35)',
+      boxShadow: `0 0 0 1px ${OVERLAY_HALO}`,
     } as CSSStyleDeclaration)
     container.appendChild(badge)
     badgeEntries.push({ el, badge })
